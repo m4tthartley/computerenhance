@@ -20,15 +20,6 @@
 #include "decode.c"
 
 
-typedef enum {
-	OP_NULL = 0,
-	OP_MOV = 1,
-} optype_t;
-
-typedef struct {
-	optype_t type;
-} op_t;
-
 // char* regNamesWide[] = {
 	
 // };
@@ -70,7 +61,7 @@ int main(int argc, char** argv)
 	// data_t file = LoadFile("./data/listing_0038_many_register_mov");
 	data_t file = LoadFile(filename);
 
-	DecodeStream(file);
+	Decode(file);
 
 	return 0;
 }

@@ -51,6 +51,29 @@ const char* regNames[] = {
 	"di",
 };
 
+typedef enum {
+	// OPCODE_NULL = 0,
+
+	OPCODE_MOV_RM_TOFROM_REG,
+	OPCODE_MOV_IM_TO_RM,
+	OPCODE_MOV_IM_TO_REG,
+	OPCODE_MOV_MEM_TO_ACC,
+	OPCODE_MOV_ACC_TO_MEM,
+	OPCODE_MOV_RM_TO_SEG,
+	OPCODE_MOV_SEG_TO_RM,
+} opcode_t;
+
+const char* opcodeNames[] = {
+	// "OPCODE_NULL             ",
+	"OPCODE_MOV_RM_TOFROM_REG",
+	"OPCODE_MOV_IM_TO_RM     ",
+	"OPCODE_MOV_IM_TO_REG    ",
+	"OPCODE_MOV_MEM_TO_ACC   ",
+	"OPCODE_MOV_ACC_TO_MEM   ",
+	"OPCODE_MOV_RM_TO_SEG    ",
+	"OPCODE_MOV_SEG_TO_RM    ",
+};
+
 #define REG_ENABLED_MASK 0b10000000
 enum {
 	EFADDR_BASE = (1<<0),
@@ -75,6 +98,28 @@ efaddr_t effectiveAddressTable[] = {
 	{bp,  0, EFADDR_BASE|EFADDR_DISP16},
 	{bx,  0, EFADDR_BASE},
 };
+
+typedef enum {
+	OP_NULL = 0,
+	OP_MOV = 1,
+} op_t;
+
+typedef struct {
+	opcode_t op;
+	uint8_t d;
+	uint8_t w;
+	uint8_t mod;
+	uint8_t reg;
+	uint8_t rm;
+	int16_t disp;
+	uint16_t data;
+	uint8_t dispSize;
+	bool_t directAddress;
+} rawinstruction_t;
+
+typedef struct {
+	op_t op;
+} instruction_t;
 
 
 #endif

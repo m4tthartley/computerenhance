@@ -9,7 +9,7 @@ outdir="./build"
 mkdir -p $outdir
 
 files="8086/emu.c"
-flags="-I/Users/matt/code/core -framework CoreFoundation"
+flags="-g -I/Users/matt/code/core -framework CoreFoundation"
 
 clang $files $flags -o $outdir/8086 
 
