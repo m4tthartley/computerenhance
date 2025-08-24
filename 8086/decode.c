@@ -22,14 +22,23 @@ typedef struct {
 		B_REG,
 		B_RM,
 		B_SR,
-		B_DISP_LO_IF_MOD,
+		// B_DISP_LO,
+		// B_DISP_HI,
+		B_DISP_LO_IF_MOD, // this one gets sign extended
 		B_DISP_HI_IF_MOD,
 		B_DATA_LO,
+		B_DATA_HI,
 		B_DATA_HI_IF_W,
 		B_DATA_HI_IF_SW_01,
 		B_ADDR_LO,
 		B_ADDR_HI,
+		// B_ADDR_LO_IF_MOD,
+		// B_ADDR_HI_IF_MOD,
 		B_INC8,
+		B_IP_LO,
+		B_IP_HI,
+		B_IP_INC_LO,
+		B_IP_INC_HI,
 	} type;
 	uint8_t size;
 	uint8_t pattern;
@@ -54,14 +63,23 @@ uint8_t bitChunkSizeTable[] = {
 	[B_REG] = 3,
 	[B_RM] = 3,
 	[B_SR] = 2,
+	// [B_DISP_LO] = 8,
+	// [B_DISP_HI] = 8,
 	[B_DISP_LO_IF_MOD] = 8,
 	[B_DISP_HI_IF_MOD] = 8,
 	[B_DATA_LO] = 8,
+	[B_DATA_HI] = 8,
 	[B_DATA_HI_IF_W] = 8,
 	[B_DATA_HI_IF_SW_01] = 8,
 	[B_ADDR_LO] = 8,
 	[B_ADDR_HI] = 8,
+	// [B_ADDR_LO_IF_MOD] = 8,
+	// [B_ADDR_HI_IF_MOD] = 8,
 	[B_INC8] = 8,
+	[B_IP_LO] = 8,
+	[B_IP_HI] = 8,
+	[B_IP_INC_LO] = 8,
+	[B_IP_INC_HI] = 8,
 };
 
 uint8_t fieldOffsetMap[] = {
@@ -76,14 +94,23 @@ uint8_t fieldOffsetMap[] = {
 	[B_REG] = offsetof(rawinstruction_t, reg),
 	[B_RM] = offsetof(rawinstruction_t, rm),
 	[B_SR] = offsetof(rawinstruction_t, reg),
+	// [B_DISP_LO] = offsetof(rawinstruction_t, disp),
+	// [B_DISP_HI] = offsetof(rawinstruction_t, disp) + 1,
 	[B_DISP_LO_IF_MOD] = offsetof(rawinstruction_t, disp),
 	[B_DISP_HI_IF_MOD] = offsetof(rawinstruction_t, disp) + 1,
 	[B_DATA_LO] = offsetof(rawinstruction_t, data),
+	[B_DATA_HI] = offsetof(rawinstruction_t, data) + 1,
 	[B_DATA_HI_IF_W] = offsetof(rawinstruction_t, data) + 1,
 	[B_DATA_HI_IF_SW_01] = offsetof(rawinstruction_t, data) + 1,
-	[B_ADDR_LO] = offsetof(rawinstruction_t, disp),
-	[B_ADDR_HI] = offsetof(rawinstruction_t, disp) + 1,
+	[B_ADDR_LO] = offsetof(rawinstruction_t, address),
+	[B_ADDR_HI] = offsetof(rawinstruction_t, address) + 1,
+	// [B_ADDR_LO_IF_MOD] = offsetof(rawinstruction_t, address),
+	// [B_ADDR_HI_IF_MOD] = offsetof(rawinstruction_t, address) + 1,
 	[B_INC8] = offsetof(rawinstruction_t, disp),
+	[B_IP_LO] = offsetof(rawinstruction_t, address),
+	[B_IP_HI] = offsetof(rawinstruction_t, address) + 1,
+	[B_IP_INC_LO] = offsetof(rawinstruction_t, disp),
+	[B_IP_INC_HI] = offsetof(rawinstruction_t, disp) + 1,
 };
 
 #define MOD_REG_RM_CHUNKS {B_MOD}, {B_REG}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}
@@ -100,9 +127,9 @@ decodeformat_t decodeTable[] = {
 	// MOV acc to mem
 	[OPCODE_MOV_ACC_TO_MEM] = {{"mov", OPFORMAT_REG_RM, .d=1, .rm=0b110}, {{B_PATTERN, 7, 0b1010001}, {B_W}, {B_ADDR_LO}, {B_ADDR_HI}}},
 	// MOV reg/mem to segment reg
-	[OPCODE_MOV_RM_TO_SEG] = {{"mov", OPFORMAT_REG_RM}, {{B_PATTERN, 8, 0b10001110}, {B_MOD}, {B_PATTERN, 1, 0}, {B_SR}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+	[OPCODE_MOV_RM_TO_SEG] = {{"mov", OPFORMAT_SR_RM}, {{B_PATTERN, 8, 0b10001110}, {B_MOD}, {B_PATTERN, 1, 0}, {B_SR}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
 	// MOV segment reg to reg/mem
-	[OPCODE_MOV_SEG_TO_RM] = {{"mov", OPFORMAT_REG_RM}, {{B_PATTERN, 8, 0b10001100}, {B_MOD}, {B_PATTERN, 1, 0}, {B_SR}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+	[OPCODE_MOV_SEG_TO_RM] = {{"mov", OPFORMAT_RM_SR}, {{B_PATTERN, 8, 0b10001100}, {B_MOD}, {B_PATTERN, 1, 0}, {B_SR}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
 
 	// PUSH reg/mem
 	[OPCODE_PUSH_RM] = {{"push", OPFORMAT_RM, .w=1}, {{B_PATTERN, 8, 0b11111111}, {B_MOD}, {B_PATTERN, 3, 0b110}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
@@ -244,7 +271,40 @@ decodeformat_t decodeTable[] = {
 	[OPCODE_XOR_RM_IM] = {{"xor", OPFORMAT_RM_IM}, {{B_PATTERN, 7, 0b1000000}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b110}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
 	[OPCODE_XOR_ACC_IM] = {{"xor", OPFORMAT_REG_IM}, {{B_PATTERN, 7, 0b0011010}, {B_W}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
 
-	// JUMPS
+	// REP
+	// [OPCODE_REP] = {{"rep", OPFORMAT_NONE}, {{B_PATTERN, 7, 0b1111001}, {B_Z}}},
+#define REP_BITS 0b1111001
+	[OPCODE_REP_MOVSB] = {{"rep movsb", OPFORMAT_NONE}, {{B_PATTERN, 7, REP_BITS}, {B_Z}, {B_PATTERN, 8, 0b10100100}}},
+	[OPCODE_REP_MOVSW] = {{"rep movsw", OPFORMAT_NONE}, {{B_PATTERN, 7, REP_BITS}, {B_Z}, {B_PATTERN, 8, 0b10100101}}},
+	[OPCODE_REP_CMPSB] = {{"rep cmpsb", OPFORMAT_NONE}, {{B_PATTERN, 7, REP_BITS}, {B_Z}, {B_PATTERN, 8, 0b10100110}}},
+	[OPCODE_REP_CMPSW] = {{"rep cmpsw", OPFORMAT_NONE}, {{B_PATTERN, 7, REP_BITS}, {B_Z}, {B_PATTERN, 8, 0b10100111}}},
+	[OPCODE_REP_SCASB] = {{"rep scasb", OPFORMAT_NONE}, {{B_PATTERN, 7, REP_BITS}, {B_Z}, {B_PATTERN, 8, 0b10101110}}},
+	[OPCODE_REP_SCASW] = {{"rep scasw", OPFORMAT_NONE}, {{B_PATTERN, 7, REP_BITS}, {B_Z}, {B_PATTERN, 8, 0b10101111}}},
+	[OPCODE_REP_LODSB] = {{"rep lodsb", OPFORMAT_NONE}, {{B_PATTERN, 7, REP_BITS}, {B_Z}, {B_PATTERN, 8, 0b10101100}}},
+	[OPCODE_REP_LODSW] = {{"rep lodsw", OPFORMAT_NONE}, {{B_PATTERN, 7, REP_BITS}, {B_Z}, {B_PATTERN, 8, 0b10101101}}},
+	[OPCODE_REP_STOSB] = {{"rep stosb", OPFORMAT_NONE}, {{B_PATTERN, 7, REP_BITS}, {B_Z}, {B_PATTERN, 8, 0b10101010}}},
+	[OPCODE_REP_STOSW] = {{"rep stosw", OPFORMAT_NONE}, {{B_PATTERN, 7, REP_BITS}, {B_Z}, {B_PATTERN, 8, 0b10101011}}},
+
+	// CALL
+	[OPCODE_CALL_DIRECT_SEG] = {{"call", OPFORMAT_IP_INC, .skipRmSizeSpecifier=1}, {{B_PATTERN, 8, 0b11101000}, {B_IP_INC_LO}, {B_IP_INC_HI}}},
+	[OPCODE_CALL_INDIRECT_SEG] = {{"call", OPFORMAT_RM, .skipRmSizeSpecifier=1, .w=1}, {{B_PATTERN, 8, 0b11111111}, {B_MOD}, {B_PATTERN, 3, 0b010}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+	[OPCODE_CALL_DIRECT_INTERSEG] = {{"call", OPFORMAT_IP_CS, .skipRmSizeSpecifier=1}, {{B_PATTERN, 8, 0b10011010}, {B_IP_LO}, {B_IP_HI}, {B_DATA_LO}, {B_DATA_HI}}},
+	[OPCODE_CALL_INDIRECT_INTERSEG] = {{"call far", OPFORMAT_RM, .skipRmSizeSpecifier=1, .w=1}, {{B_PATTERN, 8, 0b11111111}, {B_MOD}, {B_PATTERN, 3, 0b011}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+
+	// JMP unconditional
+	[OPCODE_JMP_DIRECT_SEG] = {{"jmp", OPFORMAT_IP_INC}, {{B_PATTERN, 8, 0b11101001}, {B_IP_INC_LO}, {B_IP_INC_HI}}},
+	[OPCODE_JMP_DIRECT_SEG_SHORT] = {{"jmp", OPFORMAT_IP_INC}, {{B_PATTERN, 8, 0b11101011}, {B_INC8}}},
+	[OPCODE_JMP_INDIRECT_SEG] = {{"jmp", OPFORMAT_RM, .w=1}, {{B_PATTERN, 8, 0b11111111}, {B_MOD}, {B_PATTERN, 3, 0b100}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+	[OPCODE_JMP_DIRECT_INTERSEG] = {{"jmp", OPFORMAT_IP_CS}, {{B_PATTERN, 8, 0b11101010}, {B_IP_LO}, {B_IP_HI}, {B_DATA_LO}, {B_DATA_HI}}},
+	[OPCODE_JMP_INDIRECT_INTERSEG] = {{"jmp far", OPFORMAT_RM, .w=1}, {{B_PATTERN, 8, 0b11111111}, {B_MOD}, {B_PATTERN, 3, 0b101}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+
+	// RET
+	[OPCODE_RET_SEG] = {{"ret", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11000011}}},
+	[OPCODE_RET_SEG_IM] = {{"ret", OPFORMAT_IM}, {{B_PATTERN, 8, 0b11000010}, {B_DATA_LO}, {B_DATA_HI}}},
+	[OPCODE_RET_INTERSEG] = {{"retf", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11001011}}},
+	[OPCODE_RET_INTERSEG_IM] = {{"retf", OPFORMAT_IM}, {{B_PATTERN, 8, 0b11001010}, {B_DATA_LO}, {B_DATA_HI}}},
+
+	// JUMPS conditional
 	[OPCODE_JE] = {{"je", OPFORMAT_INC}, {{B_PATTERN, 8, 0b01110100}, {B_INC8}}},
 	[OPCODE_JL] = {{"jl", OPFORMAT_INC}, {{B_PATTERN, 8, 0b01111100}, {B_INC8}}},
 	[OPCODE_JLE] = {{"jle", OPFORMAT_INC}, {{B_PATTERN, 8, 0b01111110}, {B_INC8}}},
@@ -265,7 +325,36 @@ decodeformat_t decodeTable[] = {
 	[OPCODE_LOOPZ] = {{"loopz", OPFORMAT_INC}, {{B_PATTERN, 8, 0b11100001}, {B_INC8}}},
 	[OPCODE_LOOPNZ] = {{"loopnz", OPFORMAT_INC}, {{B_PATTERN, 8, 0b11100000}, {B_INC8}}},
 	[OPCODE_JCXZ] = {{"jcxz", OPFORMAT_INC}, {{B_PATTERN, 8, 0b11100011}, {B_INC8}}},
+
+	// INTERRUPTS
+	[OPCODE_INT] = {{"int", OPFORMAT_IM}, {{B_PATTERN, 8, 0b11001101}, {B_DATA_LO}}},
+	[OPCODE_INT_TYPE3] = {{"int3", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11001100}}},
+	[OPCODE_INTO] = {{"into", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11001110}}},
+	[OPCODE_IRET] = {{"iret", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11001111}}},
+
+	// PROCESSOR CONTROL
+	[OPCODE_CLC] = {{"clc", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11111000}}},
+	[OPCODE_CMC] = {{"cmc", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11110101}}},
+	[OPCODE_STC] = {{"stc", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11111001}}},
+	[OPCODE_CLD] = {{"cld", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11111100}}},
+	[OPCODE_STD] = {{"std", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11111101}}},
+	[OPCODE_CLI] = {{"cli", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11111010}}},
+	[OPCODE_STI] = {{"sti", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11111011}}},
+	[OPCODE_HLT] = {{"hlt", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11110100}}},
+	[OPCODE_WAIT] = {{"wait", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b10011011}}},
+
+	// OPCODE_ESC,
+
+	[OPCODE_LOCK] = {{"lock", OPFORMAT_PREFIX}, {{B_PATTERN, 8, 0b11110000}}},
+
+	[OPCODE_SEGMENT] = {{"segment", OPFORMAT_SEGMENT}, {{B_PATTERN, 3, 0b001}, {B_SR}, {B_PATTERN, 3, 0b110}}},
 };
+
+bool_t segmentOverride;
+uint8_t segment;
+
+uint8_t* instructionData;
+uint16_t ip;
 
 uint32_t DispSizeForMod(rawinstruction_t inst)
 {
@@ -282,38 +371,50 @@ uint32_t DispSizeForMod(rawinstruction_t inst)
 	return 0;
 }
 
-void PrintMovMemoryOperand(uint8_t mod, uint8_t rm, int16_t disp, bool_t w, bool_t sizeSpecifier)
+void PrintInstructionRM(rawinstruction_t inst, bool_t sizeSpecifier)
 {
-	if (mod == 0b11) {
-		print("%s", regNames[w*8 + rm]);
+	if (inst.mod == 0b11) {
+		print("%s", regNames[inst.w*8 + inst.rm]);
 	} else {
-		if (sizeSpecifier) {
-			if (w) {
+		if (sizeSpecifier && !inst.skipRmSizeSpecifier) {
+			if (inst.w) {
 				print("word ");
 			} else {
 				print("byte ");
 			}
 		}
 
-		efaddr_t addr = effectiveAddressTable[rm];
-		if (!mod && rm==0b110) {
-			addr.flags &= ~EFADDR_BASE;
+		efaddr_t addr = effectiveAddressTable[inst.rm];
+		// if (!mod && rm==0b110) {
+		// 	addr.flags &= ~EFADDR_BASE;
+		// }
+
+		if (segmentOverride) {
+			print("%s:", segRegNames[segment]);
+			segmentOverride = FALSE;
 		}
 
 		print("[");
-		if (addr.flags & EFADDR_BASE) {
-			print("%s", regNames[8 + addr.baseReg]);
-		}
-		if (addr.flags & EFADDR_OFF) {
-			print(" + %s", regNames[8 + addr.offReg]);
-		}
-		if (disp && (addr.flags & EFADDR_DISP16 || mod == 0b01 || mod == 0b10)) {
-			char* sign = disp < 0 ? "-" : "+";
+		
+		if (inst.mod == 0b00 && inst.rm == 0b110) {
+			print("%u", inst.address);
+		} else {
 			if (addr.flags & EFADDR_BASE) {
-				print(" %s ", sign);
+				print("%s", regNames[8 + addr.baseReg]);
 			}
-			print("%i", abs(disp));
+			if (addr.flags & EFADDR_OFF) {
+				print(" + %s", regNames[8 + addr.offReg]);
+			}
+
+			if (inst.disp && (addr.flags & EFADDR_DISP16 || inst.mod == 0b01 || inst.mod == 0b10)) {
+				char* sign = inst.disp < 0 ? "-" : "+";
+				if (addr.flags & EFADDR_BASE) {
+					print(" %s ", sign);
+				}
+				print("%i", abs(inst.disp));
+			}
 		}
+
 		print("]");
 	}
 
@@ -384,6 +485,8 @@ void OutputRawInstruction(rawinstruction_t inst)
 	// 		exit(1);
 	// }
 
+	bool_t newline = TRUE;
+
 	switch (inst.format) {
 		case OPFORMAT_NONE: {
 			print("%s ", inst.type);
@@ -396,16 +499,24 @@ void OutputRawInstruction(rawinstruction_t inst)
 			
 			// print("mov ");
 			print("%s ", inst.type);
-			PrintMovMemoryOperand(inst.d ? inst.mod : 0b11, dest, inst.disp, inst.w, FALSE);
+			if (inst.d) {
+				PrintInstructionRM(inst, FALSE);
+			} else {
+				print("%s", regNames[inst.w*8 + inst.reg]);
+			}
 			print(", ");
-			PrintMovMemoryOperand(inst.d ? 0b11 : inst.mod, src, inst.disp, inst.w, FALSE);
+			if (inst.d) {
+				print("%s", regNames[inst.w*8 + inst.reg]);
+			} else {
+				PrintInstructionRM(inst, FALSE);
+			}
 			// print(" \n");
 		} break;
 
 		case OPFORMAT_RM_IM: {
 			// print("mov ");
 			print("%s ", inst.type);
-			PrintMovMemoryOperand(inst.mod, inst.rm, inst.disp, inst.w, FALSE);
+			PrintInstructionRM(inst, FALSE);
 			print(", ");
 			if (inst.mod == 0b11) {
 				print("%i", inst.data);
@@ -435,6 +546,25 @@ void OutputRawInstruction(rawinstruction_t inst)
 			// print(" \n");
 		} break;
 
+		case OPFORMAT_SR_RM: {
+			print("%s ", inst.type);
+			print("%s", segRegNames[inst.reg]);
+			print(", ");
+			PrintInstructionRM(inst, FALSE);
+		} break;
+
+		case OPFORMAT_RM_SR: {
+			print("%s ", inst.type);
+			PrintInstructionRM(inst, FALSE);
+			print(", ");
+			print("%s", segRegNames[inst.reg]);
+		} break;
+
+		case OPFORMAT_IM: {
+			print("%s ", inst.type);
+			print("%i", inst.data);
+		} break;
+
 		case OPFORMAT_REG_REG16: {
 			print("%s ", inst.type);
 			print("%s", regNames[inst.w*8 + inst.reg]);
@@ -454,9 +584,15 @@ void OutputRawInstruction(rawinstruction_t inst)
 			print("$+2%c%i", inst.disp < 0 ? '-' : '+', abs(inst.disp));
 		} break;
 
+		case OPFORMAT_IP_INC: {
+			// print("%u\n", inst.disp & 0xFFFF);
+			print("%s ", inst.type);
+			print("%i", inst.disp + ip);
+		} break;
+
 		case OPFORMAT_RM: {
 			print("%s ", inst.type);
-			PrintMovMemoryOperand(inst.d ? 0b11 : inst.mod, inst.rm, inst.disp, inst.w, TRUE);
+			PrintInstructionRM(inst, TRUE);
 		} break;
 
 		case OPFORMAT_REG: {
@@ -471,7 +607,7 @@ void OutputRawInstruction(rawinstruction_t inst)
 
 		case OPFORMAT_SHIFT: {
 			print("%s ", inst.type);
-			PrintMovMemoryOperand(inst.d ? 0b11 : inst.mod, inst.rm, inst.disp, inst.w, TRUE);
+			PrintInstructionRM(inst, TRUE);
 			print(", ");
 			if (inst.v) {
 				print("cl");
@@ -480,19 +616,23 @@ void OutputRawInstruction(rawinstruction_t inst)
 			}
 		} break;
 
-		// case OPCODE_MOV_MEM_TO_ACC: {
-		// 	print("mov ");
-		// 	print("ax");
-		// 	print(", ");
-		// 	PrintMovMemoryOperand(0, 0b110, inst.disp, inst.w);
-		// } break;
+		case OPFORMAT_PREFIX: {
+			newline = FALSE;
+			print("%s ", inst.type);
+		} break;
 
-		// case OPCODE_MOV_ACC_TO_MEM: {
-		// 	print("mov ");
-		// 	PrintMovMemoryOperand(0, 0b110, inst.disp, inst.w);
-		// 	print(", ");
-		// 	print("ax");
-		// } break;
+		case OPFORMAT_SEGMENT: {
+			newline = FALSE;
+			segment = inst.reg;
+			segmentOverride = TRUE;
+		} break;
+
+		case OPFORMAT_IP_CS: {
+			print("%s ", inst.type);
+			print("%u", inst.data);
+			print(":");
+			print("%u", inst.address);
+		} break;
 
 		default:
 			print_err("unknown op \n");
@@ -500,10 +640,12 @@ void OutputRawInstruction(rawinstruction_t inst)
 	}
 
 	// print("   ; %s \n", opcodeNames[inst.op]);
-	print("\n");
+	if (newline) {
+		print("\n");
+	}
 }
 
-void DecodeInstruction(uint8_t** ip)
+void DecodeInstruction(uint16_t* ip)
 {
 	for (int idx=0; idx<array_size(decodeTable); ++idx) {
 		rawinstruction_t inst = decodeTable[idx].inst;
@@ -530,7 +672,9 @@ void DecodeInstruction(uint8_t** ip)
 				return;
 			} // found match?
 
-			uint16_t* bits = (uint16_t*)(*ip + (bitCursor/8));
+			bool_t directAddress = inst.mod == 0b00 && inst.rm == 0b110;
+
+			uint16_t* bits = (uint16_t*)(instructionData + (*ip + bitCursor/8));
 			uint32_t offset = bitCursor % 8;
 
 			uint16_t mask = (1 << chunk.size) - 1;
@@ -553,6 +697,13 @@ void DecodeInstruction(uint8_t** ip)
 				}
 			}
 
+			// if (chunk.type == B_ADDR_LO_IF_MOD && !directAddress) {
+			// 	continue;
+			// }
+			// if (chunk.type == B_ADDR_HI_IF_MOD && !directAddress) {
+			// 	continue;
+			// }
+
 			if (chunk.type == B_PATTERN) {
 				// print("bitCursor %u, offset %i, chunk.size %i, value %u, pattern %u \n", bitCursor, offset, chunk.size, value, chunk.pattern);
 				if (value != chunk.pattern) {
@@ -569,6 +720,12 @@ void DecodeInstruction(uint8_t** ip)
 
 				// 	default:
 				// }
+
+				if (directAddress) {
+					if (chunk.type == B_DISP_LO_IF_MOD) chunk.type = B_ADDR_LO;
+					if (chunk.type == B_DISP_HI_IF_MOD) chunk.type = B_ADDR_HI;
+				}
+
 				bool_t signExtend = (chunk.type == B_DISP_LO_IF_MOD && DispSizeForMod(inst) == 1) || chunk.type == B_INC8;
 
 				if (signExtend) {
@@ -614,8 +771,8 @@ void Decode(data_t file)
 	char str[] = {215, 0};
 	char* str2 = "×";
 
-	uint8_t* ip = file.data;
-	while (ip < file.data+file.size) {
+	instructionData = file.data;
+	while (ip < file.size) {
 		DecodeInstruction(&ip);
 	}
 

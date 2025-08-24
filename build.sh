@@ -30,16 +30,24 @@ clang $files $flags -o $outdir/8086
 # nasm $outdir/out.asm
 # diff $input $outdir/out
 
-nasm ./data/test.asm
+nasmOptions="-w-prefix-lock-xchg"
 
-input="./data/test"
-$outdir/8086 $input 
-$outdir/8086 $input > $outdir/out.asm
-nasm $outdir/out.asm
-diff $input $outdir/out
+# nasm ./data/test.asm $nasmOptions
+
+# input="./data/test"
+# $outdir/8086 $input 
+# $outdir/8086 $input > $outdir/out.asm
+# nasm $outdir/out.asm $nasmOptions
+# diff $input $outdir/out
 
 # input="./data/listing_0041_add_sub_cmp_jnz"
 # $outdir/8086 $input 
 # $outdir/8086 $input > $outdir/out.asm
-# nasm $outdir/out.asm
+# nasm $outdir/out.asm $nasmOptions
 # diff $input $outdir/out
+
+input="./data/listing_0042_completionist_decode"
+$outdir/8086 $input 
+$outdir/8086 $input > $outdir/out.asm
+nasm $outdir/out.asm $nasmOptions
+diff $input $outdir/out
