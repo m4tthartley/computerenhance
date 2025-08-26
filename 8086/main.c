@@ -17,7 +17,9 @@
 #include <core/sys.h>
 #include <core/core.h>
 
+#include "sim.c"
 #include "decode.c"
+#include "disassembly.c"
 
 
 // char* regNamesWide[] = {
@@ -61,7 +63,7 @@ int main(int argc, char** argv)
 	// data_t file = LoadFile("./data/listing_0038_many_register_mov");
 	data_t file = LoadFile(filename);
 
-	Decode(file);
+	Simulate(file, TRUE);
 
 	return 0;
 }
