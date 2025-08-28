@@ -49,7 +49,19 @@ nasm ./data/test.asm $nasmOptions
 # nasm $outdir/out.asm $nasmOptions
 # diff $input $outdir/out
 
-input="./data/listing_0043_immediate_movs"
+# input="./data/listing_0043_immediate_movs"
+# $outdir/8086 $input 
+# $outdir/8086 $input > $outdir/out.asm
+# nasm $outdir/out.asm
+# diff $input $outdir/out
+
+# input="./data/listing_0044_register_movs"
+# $outdir/8086 $input 
+# $outdir/8086 $input > $outdir/out.asm
+# nasm $outdir/out.asm
+# diff $input $outdir/out
+
+input="./data/listing_0045_challenge_register_movs"
 $outdir/8086 $input 
 $outdir/8086 $input > $outdir/out.asm
 nasm $outdir/out.asm

@@ -13,9 +13,47 @@
 
 cpu_t cpu;
 
+void* GetAddressFromOperand(operand_t* operand, bool_t wide)
+{
+	switch (operand->type) {
+		case OPERAND_REG:
+			if (!wide && operand->flags & OPERAND_FLAG_HIGH) {
+				return &cpu.registers[operand->reg].hi;
+			} else {
+				return &cpu.registers[operand->reg];
+			}
+
+		case OPERAND_IMMEDIATE:
+			return &operand->data;
+
+		default:
+			return NULL;
+	}
+}
+
 void SimInstruction(rawinstruction_t inst)
 {
+	switch (inst.op) {
+		case OP_MOV: {
+			// if (inst.operand0.flags & OPERAND_FLAG_WIDE)
+			if (inst.wide) {
+				uint16_t* dest = GetAddressFromOperand(&inst.operand0, inst.wide);
+				uint16_t* src = GetAddressFromOperand(&inst.operand1, inst.wide);
+				// uint16_t src = GetValue16FromOperand(inst.operand1);
+				assert(dest && src);
+				*dest = *src;
+			} else {
+				uint8_t* dest = GetAddressFromOperand(&inst.operand0, inst.wide);
+				// uint8_t src = GetValue8FromOperand(inst.operand1);
+				uint8_t* src = GetAddressFromOperand(&inst.operand1, inst.wide);
+				assert(dest && src);
+				*dest = *src;
+			}
+		} break;
 
+		default:
+			print_err("Unimplemented operation \n");
+	}
 }
 
 char HexNibbleStr(uint8_t value)

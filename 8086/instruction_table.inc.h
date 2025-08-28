@@ -31,6 +31,7 @@
 #define DATA_IF_W {BITS_DATA_W_IF_W, 0}
 
 #define ImplD {BITS_D, 0, 1}
+#define ImplW {BITS_W, 0, 1}
 #define ImplMod(value) {BITS_MOD, 0, value}
 #define ImplReg(value) {BITS_REG, 0, value}
 #define ImplRm(value) {BITS_RM, 0, value}
@@ -53,10 +54,10 @@ A(MOV, Bits(1010000), W, Addr, ImplReg(0), ImplD)
 A(MOV, Bits(1010001), W, Addr, ImplReg(0))
 // // MOV reg/mem to segment reg
 // [OPCODE_MOV_RM_TO_SEG] = {{"mov", OPFORMAT_SR_RM}, {{B_PATTERN, 8, 0b10001110}, {B_MOD}, {B_PATTERN, 1, 0}, {B_SR}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
-A(MOV, Bits(10001110), MOD, Bits(0), SR, RM, ImplD)
+A(MOV, Bits(10001110), MOD, Bits(0), SR, RM, ImplD, ImplW)
 // // MOV segment reg to reg/mem
 // [OPCODE_MOV_SEG_TO_RM] = {{"mov", OPFORMAT_RM_SR}, {{B_PATTERN, 8, 0b10001100}, {B_MOD}, {B_PATTERN, 1, 0}, {B_SR}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
-A(MOV, Bits(10001100), MOD, Bits(0), SR, RM)
+A(MOV, Bits(10001100), MOD, Bits(0), SR, RM, ImplW)
 
 // PUSH reg/mem
 // [OPCODE_PUSH_RM] = {{"push", OPFORMAT_RM, .w=1}, {{B_PATTERN, 8, 0b11111111}, {B_MOD}, {B_PATTERN, 3, 0b110}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},

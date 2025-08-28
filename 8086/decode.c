@@ -517,6 +517,10 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 			regOperand = CreateRegOperand(reg, wide);
 		}
 
+		if (hasBits[BITS_SR]) {
+			regOperand = CreateRegOperand(8 + bits[BITS_SR], wide);
+		}
+
 		if (hasBits[BITS_MOD]) {
 			if (mod == 0b11) {
 				// register mode
@@ -628,6 +632,7 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 		// }
 		inst.operand0 = *operand0;
 		inst.operand1 = *operand1;
+		inst.wide = wide;
 	}
 
 	return inst;

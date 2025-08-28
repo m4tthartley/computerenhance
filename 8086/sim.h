@@ -319,8 +319,6 @@ typedef struct {
 typedef struct {
 	char* type;
 	uint8_t format;
-	op_t op;
-	uint8_t size;
 	uint8_t d;
 	uint8_t s;
 	uint8_t w;
@@ -336,6 +334,11 @@ typedef struct {
 	uint16_t address;
 	// bool_t directAddress;
 	bool_t skipRmSizeSpecifier;
+	// ^ old stuff
+	
+	op_t op;
+	uint8_t size;
+	bool_t wide;
 
 	union {
 		operand_t operands[2];
