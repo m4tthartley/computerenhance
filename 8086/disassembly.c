@@ -6,34 +6,8 @@
 #include <core/core.h>
 #include "sim.h"
 #include "decode.h"
+#include "disassembly.h"
 
-
-char* regNames[] = {
-	// "al",
-	// "cl",
-	// "dl",
-	// "bl",
-	// "ah",
-	// "ch",
-	// "dh",
-	// "bh",
-
-	"ax",
-	"cx",
-	"dx",
-	"bx",
-	"sp",
-	"bp",
-	"si",
-	"di",
-};
-
-const char* segRegNames[] = {
-	"es",
-	"cs",
-	"ss",
-	"ds",
-};
 
 void DisplayOperand(rawinstruction_t inst, operand_t operand)
 {
