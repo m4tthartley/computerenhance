@@ -31,11 +31,11 @@ nasm ./data/test.asm $nasmOptions
 # nasm $outdir/out.asm
 # diff $input $outdir/out
 
-# input="./data/test"
-# $outdir/8086 $input 
-# $outdir/8086 $input > $outdir/out.asm
-# nasm $outdir/out.asm $nasmOptions
-# diff $input $outdir/out
+input="./data/test"
+$outdir/8086 $input 
+$outdir/8086 $input > $outdir/out.asm
+nasm $outdir/out.asm $nasmOptions
+diff $input $outdir/out
 
 # input="./data/listing_0041_add_sub_cmp_jnz"
 # $outdir/8086 $input 
@@ -61,8 +61,14 @@ nasm ./data/test.asm $nasmOptions
 # nasm $outdir/out.asm
 # diff $input $outdir/out
 
-input="./data/listing_0045_challenge_register_movs"
-$outdir/8086 $input 
-$outdir/8086 $input > $outdir/out.asm
-nasm $outdir/out.asm
-diff $input $outdir/out
+# input="./data/listing_0045_challenge_register_movs"
+# $outdir/8086 $input 
+# $outdir/8086 $input > $outdir/out.asm
+# nasm $outdir/out.asm
+# diff $input $outdir/out
+
+# input="./data/listing_0046_add_sub_cmp"
+# $outdir/8086 $input 
+# $outdir/8086 $input > $outdir/out.asm
+# nasm $outdir/out.asm
+# diff $input $outdir/out

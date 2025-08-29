@@ -23,6 +23,7 @@
 #define Bits(bits) {BITS_PATTERN, sizeof(#bits)-1, 0b##bits}
 #define D {BITS_D, 1}
 #define W {BITS_W, 1}
+#define S {BITS_S, 1}
 #define MOD {BITS_MOD, 2}
 #define REG {BITS_REG, 3}
 #define RM {BITS_RM, 3}
@@ -110,10 +111,13 @@ A(MOV, Bits(10001100), MOD, Bits(0), SR, RM, ImplW)
 
 // // ADD reg/mem, reg
 // [OPCODE_ADD_REG_RM] = {{"add", OPFORMAT_REG_RM}, {{B_PATTERN, 6, 0b000000}, {B_D}, {B_W}, {B_MOD}, {B_REG}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(ADD, Bits(000000), D, W, MOD, REG, RM)
 // // ADD reg/mem, imm
 // [OPCODE_ADD_RM_IM] = {{"add", OPFORMAT_RM_IM}, {{B_PATTERN, 6, 0b100000}, {B_S}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b000}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}, {B_DATA_LO}, {B_DATA_HI_IF_SW_01}}},
+A(ADD, Bits(100000), S, W, MOD, Bits(000), RM, DATA, DATA_IF_W)
 // // ADD acc, imm
 // [OPCODE_ADD_ACC_IM] = {{"add", OPFORMAT_REG_IM}, {{B_PATTERN, 7, 0b0000010}, {B_W}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
+A(ADD, Bits(0000010), W, DATA, DATA_IF_W, ImplReg(0), ImplD)
 
 // // ADC formats
 // STANDARD_ARITHMETIC_FORMAT_WITH_SIGN(ADC, "adc", 010),
@@ -129,10 +133,13 @@ A(MOV, Bits(10001100), MOD, Bits(0), SR, RM, ImplW)
 
 // // SUB reg/mem, reg
 // [OPCODE_SUB_REG_RM] = {{"sub", OPFORMAT_REG_RM}, {{B_PATTERN, 6, 0b001010}, {B_D}, {B_W}, {B_MOD}, {B_REG}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(SUB, Bits(001010), D, W, MOD, REG, RM)
 // // SUB reg/mem, imm
 // [OPCODE_SUB_RM_IM] = {{"sub", OPFORMAT_RM_IM}, {{B_PATTERN, 6, 0b100000}, {B_S}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b101}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}, {B_DATA_LO}, {B_DATA_HI_IF_SW_01}}},
+A(SUB, Bits(100000), S, W, MOD, Bits(101), RM, DATA, DATA_IF_W)
 // // SUB acc, imm
 // [OPCODE_SUB_ACC_IM] = {{"sub", OPFORMAT_REG_IM}, {{B_PATTERN, 7, 0b0010110}, {B_W}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
+A(SUB, Bits(0010110), W, DATA, DATA_IF_W, ImplReg(0), ImplD)
 
 // // SBB formats
 // STANDARD_ARITHMETIC_FORMAT_WITH_SIGN(SBB, "sbb", 011),
@@ -146,10 +153,13 @@ A(MOV, Bits(10001100), MOD, Bits(0), SR, RM, ImplW)
 
 // // CMP reg/mem, reg
 // [OPCODE_CMP_REG_RM] = {{"cmp", OPFORMAT_REG_RM}, {{B_PATTERN, 6, 0b001110}, {B_D}, {B_W}, {B_MOD}, {B_REG}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(CMP, Bits(001110), D, W, MOD, REG, RM)
 // // CMP reg/mem, imm
 // [OPCODE_CMP_RM_IM] = {{"cmp", OPFORMAT_RM_IM}, {{B_PATTERN, 6, 0b100000}, {B_S}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b111}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}, {B_DATA_LO}, {B_DATA_HI_IF_SW_01}}},
+A(CMP, Bits(100000), S, W, MOD, Bits(111), RM, DATA, DATA_IF_W)
 // // CMP acc, imm
 // [OPCODE_CMP_ACC_IM] = {{"cmp", OPFORMAT_REG_IM}, {{B_PATTERN, 7, 0b0011110}, {B_W}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
+A(CMP, Bits(0011110), W, DATA, DATA_IF_W, ImplReg(0))
 
 // [OPCODE_AAS] = {{"aas", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b00111111}}},
 // [OPCODE_DAS] = {{"das", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b00101111}}},

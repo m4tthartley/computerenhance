@@ -403,9 +403,32 @@ typedef struct {
 	};
 } reg_t;
 
+enum {
+	FLAG_CARRY		= (1<<0),
+	FLAG_PARITY		= (1<<1),
+	FLAG_AUX_CARRY	= (1<<2),
+	FLAG_ZERO		= (1<<3),
+	FLAG_SIGN		= (1<<4),
+	FLAG_TRAP		= (1<<5),
+	FLAG_INT_ENABLE	= (1<<6),
+	FLAG_DIRECTION	= (1<<7),
+	FLAG_OVERFLOW	= (1<<8),
+} cpuflag_t;
+char* cpuFlagNames[] = {
+	(char*)"CF",
+	(char*)"PF",
+	(char*)"AF",
+	(char*)"ZF",
+	(char*)"SF",
+	(char*)"TF",
+	(char*)"IF",
+	(char*)"DF",
+	(char*)"OF",
+};
+
 typedef struct {
 	uint8_t* instructionData;
-	uint16_t ip;
+	// uint16_t ip;
 
 	union {
 		struct {
@@ -413,6 +436,7 @@ typedef struct {
 			reg_t cx;
 			reg_t dx;
 			reg_t bx;
+
 			reg_t sp;
 			reg_t bp;
 			reg_t si;
@@ -422,6 +446,9 @@ typedef struct {
 			reg_t cs;
 			reg_t ss;
 			reg_t ds;
+
+			uint16_t ip;
+			uint16_t flags;
 
 			// union {
 			// 	uint16_t ax;
