@@ -1,36 +1,53 @@
 
 bits 16
 
-; mov cx, 200
-; mov bx, cx
-; add cx, 1000
-; mov bx, 2000
-; sub cx, bx
 
-; mov cx, 3
+; mov word [1000], 1
+; mov word [1002], 2
+; mov word [1004], 3
+; mov word [1006], 4
+; 
 ; mov bx, 1000
-; loop_start:
-; add bx, 10
-; sub cx, 1
-; jnz loop_start
+; mov word [bx + 4], 10
+; 
+; mov bx, word [1000]
+; mov cx, word [1002]
+; mov dx, word [1004]
+; mov bp, word [1006]
 
-mov ax, 10
-mov bx, 10
-mov cx, 10
+; mov dx, 6
+; mov bp, 1000
+; 
+; mov si, 0
+; init_loop_start:
+; 	mov word [bp + si], si
+; 	add si, 2
+; 	cmp si, dx
+; 	jnz init_loop_start
+; 
+; mov bx, 0
+; mov si, 0
+; add_loop_start:
+; 	mov cx, word [bp + si]
+; 	add bx, cx
+; 	add si, 2
+; 	cmp si, dx
+; 	jnz add_loop_start
 
-label_0:
-cmp bx, cx
-je label_1
+mov dx, 6
+mov bp, 1000
 
-add ax, 1
-jp label_2
+mov si, 0
+init_loop_start:
+	mov word [bp + si], si
+	add si, 2
+	cmp si, dx
+	jnz init_loop_start
 
-label_1:
-sub bx, 5
-jb label_3
-
-label_2:
-sub cx, 2
-
-label_3:
-loopnz label_0
+mov bx, 0
+mov si, dx
+sub bp, 2
+add_loop_start:
+	add bx, word [bp + si]
+	sub si, 2
+	jnz add_loop_start

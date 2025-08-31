@@ -13,6 +13,7 @@
 
 
 cpu_t cpu = {0};
+uint8_t memory[0xFFFF << 4] = {0};
 
 char HexNibbleStr(uint8_t value)
 {
@@ -57,6 +58,25 @@ char* BinaryStr16(uint16_t value)
 	return str;
 }
 
+uint32_t GetMemoryAddress(operand_t operand)
+{
+	// NOTE: 20bits are needed for 8086 memory,
+	// I'm just using a u32
+
+	assert(operand.type == OPERAND_EFF_ADDR);
+
+	if (operand.flags & OPERAND_FLAG_DIRECT_ADDR) {
+		return operand.address;
+	} else {
+		uint32_t addr = cpu.registers[operand.reg].word;
+		if (operand.flags & OPERAND_FLAG_OFFSET_REGISTER) {
+			addr += cpu.registers[operand.regOff].word;
+		}
+		addr += operand.displacement;
+		return addr;
+	}
+}
+
 void* GetAddressFromOperand(operand_t* operand, bool_t wide)
 {
 	switch (operand->type) {
@@ -79,16 +99,33 @@ uint16_t GetOperandValue(rawinstruction_t inst, int index)
 {
 	switch (inst.operands[index].type) {
 		case OPERAND_REG:
-			if (!inst.wide && inst.operands[index].flags & OPERAND_FLAG_HIGH) {
-				return cpu.registers[inst.operands[index].reg].hi;
-			} else {
+			if (inst.wide) {
 				return cpu.registers[inst.operands[index].reg].word;
+			} else {
+				if (inst.operands[index].flags & OPERAND_FLAG_HIGH) {
+					return cpu.registers[inst.operands[index].reg].hi;
+				} else {
+					return cpu.registers[inst.operands[index].reg].lo;
+				}
 			}
+
+		case OPERAND_EFF_ADDR: {
+			uint32_t addr = GetMemoryAddress(inst.operands[index]);
+			uint16_t* value = (uint16_t*)(memory + addr);
+			return *value & (0xFF | (0xFF << (inst.wide*8)));
+			// if (inst.wide) {
+
+			// } else {
+
+			// }
+		} break;
 
 		case OPERAND_IMMEDIATE:
 			return inst.operands[index].data;
 
 		default:
+			// assert(FALSE);
+			// print_err(" GetOperandValue for operand type not implemented ");
 			return 0;
 	}
 }
@@ -112,6 +149,14 @@ void StoreInDestination(rawinstruction_t inst, uint16_t value)
 				}
 			}
 			break;
+
+		case OPERAND_EFF_ADDR: {
+			uint32_t addr = GetMemoryAddress(inst.operand0);
+			memory[addr] = value & 0x00FF;
+			if (inst.wide) {
+				memory[addr+1] = value >> 8;
+			}
+		} break;
 			
 		case OPERAND_IMMEDIATE:
 			// return inst.operands[index].data;
@@ -235,19 +280,21 @@ void SimInstruction(rawinstruction_t inst)
 	switch (inst.op) {
 		case OP_MOV: {
 			// if (inst.operand0.flags & OPERAND_FLAG_WIDE)
-			if (inst.wide) {
-				uint16_t* dest = GetAddressFromOperand(&inst.operand0, inst.wide);
-				uint16_t* src = GetAddressFromOperand(&inst.operand1, inst.wide);
-				// uint16_t src = GetValue16FromOperand(inst.operand1);
-				assert(dest && src);
-				*dest = *src;
-			} else {
-				uint8_t* dest = GetAddressFromOperand(&inst.operand0, inst.wide);
-				// uint8_t src = GetValue8FromOperand(inst.operand1);
-				uint8_t* src = GetAddressFromOperand(&inst.operand1, inst.wide);
-				assert(dest && src);
-				*dest = *src;
-			}
+			// if (inst.wide) {
+			// 	uint16_t* dest = GetAddressFromOperand(&inst.operand0, inst.wide);
+			// 	uint16_t* src = GetAddressFromOperand(&inst.operand1, inst.wide);
+			// 	// uint16_t src = GetValue16FromOperand(inst.operand1);
+			// 	assert(dest && src);
+			// 	*dest = *src;
+			// } else {
+			// 	uint8_t* dest = GetAddressFromOperand(&inst.operand0, inst.wide);
+			// 	// uint8_t src = GetValue8FromOperand(inst.operand1);
+			// 	uint8_t* src = GetAddressFromOperand(&inst.operand1, inst.wide);
+			// 	assert(dest && src);
+			// 	*dest = *src;
+			// }
+
+			StoreInDestination(inst, src);
 		} break;
 
 		case OP_ADD: {
@@ -300,15 +347,15 @@ void SimInstruction(rawinstruction_t inst)
 			}
 		} break;
 
-		case OP_SUB: {
-			// uint16_t result = dest - src;
-			SetCarryFlag(src > dest);
-			SetAuxCarryFlag((dest ^ src ^ (dest-src)) & 0x10);
+		case OP_SUB:
+		case OP_CMP: {
+			SetCpuFlag(CF, src > dest);
+			SetCpuFlag(AF, (dest ^ src ^ (dest-src)) & 0x10);
 
-			// print("\n; %s", BinaryStr16(dest));
 			dest -= src;
-			// print("\n; %s", BinaryStr16(dest));
-			StoreInDestination(inst, dest);
+			if (inst.op == OP_SUB) {
+				StoreInDestination(inst, dest);
+			}
 
 			// overflow flag
 			if (inst.wide) {
@@ -322,11 +369,13 @@ void SimInstruction(rawinstruction_t inst)
 			}
 		} break;
 
-		case OP_CMP: {
-			dest -= src;
-		} break;
+		// case OP_CMP: {
+		// 	SetCpuFlag(CF, src > dest);
+		// 	SetCpuFlag(AF, (dest ^ src ^ (dest-src)) & 0x10);
+		// 	dest -= src;
+		// } break;
 
-		
+
 		case OP_JZ:
 			ConditionalJump(cpu.flags & FLAG_ZERO, inc);
 			break;
