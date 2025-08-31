@@ -296,7 +296,8 @@ enum {
 	OPERAND_FLAG_DIRECT_ADDR 	 = (1<<1),
 	OPERAND_FLAG_WIDE			 = (1<<2),
 	OPERAND_FLAG_HIGH			 = (1<<3),
-	OPERAND_FLAG_SIZE_SPECIFIER  = (1<<4),
+	OPERAND_FLAG_SIGNED			 = (1<<4),
+	OPERAND_FLAG_SIZE_SPECIFIER  = (1<<5),
 } operandflags_t;
 typedef struct {
 	operandtype_t type;
@@ -402,29 +403,6 @@ typedef struct {
 		};
 	};
 } reg_t;
-
-enum {
-	FLAG_CARRY		= (1<<0),
-	FLAG_PARITY		= (1<<1),
-	FLAG_AUX_CARRY	= (1<<2),
-	FLAG_ZERO		= (1<<3),
-	FLAG_SIGN		= (1<<4),
-	FLAG_TRAP		= (1<<5),
-	FLAG_INT_ENABLE	= (1<<6),
-	FLAG_DIRECTION	= (1<<7),
-	FLAG_OVERFLOW	= (1<<8),
-} cpuflag_t;
-char* cpuFlagNames[] = {
-	(char*)"CF",
-	(char*)"PF",
-	(char*)"AF",
-	(char*)"ZF",
-	(char*)"SF",
-	(char*)"TF",
-	(char*)"IF",
-	(char*)"DF",
-	(char*)"OF",
-};
 
 typedef struct {
 	uint8_t* instructionData;

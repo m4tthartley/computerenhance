@@ -5,13 +5,57 @@
 
 #include "core/core.h"
 #include "core/sys.h"
+#include "instruction_table.h"
 #include "shared.h"
 #include "sim.h"
 #include "decode.h"
 #include "disassembly.h"
 
 
-cpu_t cpu;
+cpu_t cpu = {0};
+
+char HexNibbleStr(uint8_t value)
+{
+	return value < 10 ? '0'+value : 'A'+value-10;
+}
+
+char* HexByteStr(reg_t reg)
+{
+	uint64_t result = 0;
+	// char str[5] = {0};
+	char* str = strcopy("0000");
+	// sys_zero_memory(str, 5);
+
+	// str[0] = ((reg.lo>>4)&0x0F) < 10 ? '0'+reg.lo : 'A'+reg.lo-10;
+	// str[1] = (reg.lo&0x0F) < 10 ? '0'+reg.lo : 'A'+reg.lo-10;
+
+	// str[0] = '0';
+	// str[1] = 'x';
+	int s = 0;
+	str[s+0] = HexNibbleStr(reg.hi>>4);
+	str[s+1] = HexNibbleStr(reg.hi&0x0F);
+	str[s+2] = HexNibbleStr(reg.lo>>4);
+	str[s+3] = HexNibbleStr(reg.lo&0x0F);
+
+	return str;
+	// sys_copy_memory(&result, str, 5);
+	// return result;
+}
+
+char* BinaryStr16(uint16_t value)
+{
+	char* str = strcopy("0000 0000 0000 0000");
+	int c = 0;
+	for (int b=0; b<16; ++b) {
+		if (value & (1<<b)) {
+			str[18 - (b + b/4)] = '1';
+		} else {
+			str[18 - (b + b/4)] = '0';
+		}
+	}
+
+	return str;
+}
 
 void* GetAddressFromOperand(operand_t* operand, bool_t wide)
 {
@@ -57,11 +101,14 @@ void StoreInDestination(rawinstruction_t inst, uint16_t value)
 		case OPERAND_REG:
 			if (inst.wide) {
 				cpu.registers[op.reg].word = value;
+				// cpu.flags = (value & 0x8000) ? cpu.flags | FLAG_SIGN : cpu.flags & ~FLAG_SIGN;
 			} else {
 				if (op.flags & OPERAND_FLAG_HIGH) {
 					cpu.registers[op.reg].hi = value;
+					// cpu.flags |= (value & 0x80) ? (1<<FLAG_SIGN) : 0;
 				} else {
 					cpu.registers[op.reg].lo = value;
+					// cpu.flags |= (value & 0x80) ? (1<<FLAG_SIGN) : 0;
 				}
 			}
 			break;
@@ -80,10 +127,100 @@ void* GetOperandAddress(rawinstruction_t inst, int index)
 	return GetAddressFromOperand(&inst.operands[index], inst.wide);
 }
 
+void SetCpuFlag(uint8_t flag, bool_t value)
+{
+	assert(value==0 || value==1);
+
+	if (value){
+		cpu.flags |= 1<<flag;
+	} else {
+		cpu.flags &= ~(1<<flag);
+	}
+}
+
+void UpdateCpuFlags(op_t op, uint16_t oldValue, uint16_t value, bool_t wide)
+{
+	// uint16_t dest = GetOperandValue(inst, 0);
+	if (op >= array_size(instructionFlags)) {
+		return;
+	}
+
+	for (int flag=0; flag<FLAG_COUNT; ++flag) {
+		flaglogic_t logic = instructionFlags[op][flag];
+		if (logic.enabled && logic.logic != FLAGLOGIC_X) {
+			SetCpuFlag(flag, logic.logic);
+		}
+	}
+
+	flaglogic_t ZFLogic = instructionFlags[op][ZF];
+	flaglogic_t SFLogic = instructionFlags[op][SF];
+	flaglogic_t* f = instructionFlags[op];
+	bool_t cf = f[CF].enabled && (f[CF].logic == FLAGLOGIC_X);
+	bool_t pf = f[PF].enabled && (f[PF].logic == FLAGLOGIC_X);
+	bool_t of = f[OF].enabled && (f[OF].logic == FLAGLOGIC_X);
+	flaglogic_t asd = f[PF];
+
+	if (pf) {
+		// print("\n; %s", BinaryStr16(value));
+		int count = 0;
+		for (int i=0; i<8; ++i) {
+			if (value & (1<<i)) ++count;
+		}
+		// if (wide) {
+		// 	for (int i=8; i<16; ++i) {
+		// 		if (value & (1<<i)) ++count;
+		// 	}
+		// }
+		SetCpuFlag(PF, !(count & 1));
+	}
+
+	if (f[ZF].enabled && f[ZF].logic == FLAGLOGIC_X) {
+		SetCpuFlag(ZF, value == 0);
+	}
+
+	if (SFLogic.enabled) {
+		if (SFLogic.logic == FLAGLOGIC_X) {
+			// bool_t value;
+			// if (inst.wide) {
+
+			// } else {
+			// 	if (inst.operand0.flags & OPERAND_FLAG_HIGH) {
+
+			// 	} else {
+
+			// 	}
+			// }
+			// cpu.flags = (value & 0x8000) ? cpu.flags | FLAG_SIGN : cpu.flags & ~FLAG_SIGN;
+			SetCpuFlag(SF, value & 0x8000);
+			// print(" ; (sign flag %i), %i", value & 0x8000, value);
+		}
+	}
+
+	// if (of) {
+	// 	if (wide) {
+	// 		uint16_t asd = (oldValue&0x8000) ^ (value&0x8000);
+	// 		SetCpuFlag(OF, (oldValue&0x8000) ^ (value&0x8000));
+	// 	} else {
+	// 		SetCpuFlag(OF, (oldValue&0x80) ^ (value&0x80));
+	// 	}
+	// }
+}
+
+void SetCarryFlag(bool_t value)
+{
+	SetCpuFlag(CF, value);
+}
+
+void SetAuxCarryFlag(bool_t value)
+{
+	SetCpuFlag(AF, value);
+}
+
 void SimInstruction(rawinstruction_t inst)
 {
 	uint16_t dest = GetOperandValue(inst, 0);
 	uint16_t src = GetOperandValue(inst, 1);
+	uint16_t oldDest = dest;
 
 	switch (inst.op) {
 		case OP_MOV: {
@@ -104,59 +241,114 @@ void SimInstruction(rawinstruction_t inst)
 		} break;
 
 		case OP_ADD: {
-			uint8_t* dest = GetAddressFromOperand(&inst.operand0, inst.wide);
-			uint8_t* src = GetAddressFromOperand(&inst.operand1, inst.wide);
-			uint16_t result = dest[0];
+			// uint8_t* dest = GetAddressFromOperand(&inst.operand0, inst.wide);
+			// uint8_t* src = GetAddressFromOperand(&inst.operand1, inst.wide);
+			// uint16_t result = dest[0];
+			// if (inst.wide) {
+			// 	result |= dest[1] << 8;
+			// }
+			// uint16_t addition = src[0];
+			// if (inst.wide) {
+			// 	addition |= src[1] << 8;
+			// }
+			// result += addition;
+			// dest[0] = result & 0xFF;
+			// if (inst.wide) {
+			// 	dest[1] = result >> 8;
+			// }
+
 			if (inst.wide) {
-				result |= dest[1] << 8;
+				SetCarryFlag(src > 0xFFFF-dest);
+			} else {
+				SetCarryFlag(src > 0xFF-dest);
 			}
-			uint16_t addition = src[0];
+
+			// if (dest < 0x10) {
+			// 	SetAuxCarryFlag(src > 0x10-dest);
+			// }
+			// uint16_t test = dest ^ src;
+			// print("\n; %s", BinaryStr16(dest));
+			// print("\n; %s", BinaryStr16(src));
+			// print("\n; %s", BinaryStr16(dest+src));
+			// print("\n; %s", BinaryStr16(dest ^ src));
+			// print("\n; %s", BinaryStr16(dest ^ src ^ (dest+src)));
+			// print("\n; %s", BinaryStr16((dest ^ src ^ (dest+src)) & 0x10));
+			SetAuxCarryFlag((dest ^ src ^ (dest+src)) & 0x10);
+
+			dest += src;
+			StoreInDestination(inst, dest);
+
+			// overflow flag
 			if (inst.wide) {
-				addition |= src[1] << 8;
-			}
-			result += addition;
-			dest[0] = result & 0xFF;
-			if (inst.wide) {
-				// dest[1] = (result & 0xFF00) >> 8;
-				dest[1] = result >> 8;
+				uint16_t sameSign = (oldDest&0x8000) == (src&0x8000);
+				uint16_t of =  sameSign && (oldDest&(0x8000)) != (dest&0x8000);
+				SetCpuFlag(OF, of);
+			} else {
+				uint16_t sameSign = (oldDest&0x80) == (src&0x80);
+				uint16_t of =  sameSign && (oldDest&0x80) != (dest&0x80);
+				SetCpuFlag(OF, of);
 			}
 		} break;
 
 		case OP_SUB: {
-			uint16_t result = dest - src;
-			StoreInDestination(inst, result);
+			// uint16_t result = dest - src;
+			SetCarryFlag(src > dest);
+			SetAuxCarryFlag((dest ^ src ^ (dest-src)) & 0x10);
+
+			// print("\n; %s", BinaryStr16(dest));
+			dest -= src;
+			// print("\n; %s", BinaryStr16(dest));
+			StoreInDestination(inst, dest);
+
+			// overflow flag
+			if (inst.wide) {
+				uint16_t diffSign = (oldDest&0x8000) != (src&0x8000);
+				uint16_t of =  diffSign && (oldDest&(0x8000)) != (dest&0x8000);
+				SetCpuFlag(OF, of);
+			} else {
+				uint16_t diffSign = (oldDest&0x80) != (src&0x80);
+				uint16_t of =  diffSign && (oldDest&0x80) != (dest&0x80);
+				SetCpuFlag(OF, of);
+			}
+		} break;
+
+		case OP_CMP: {
+			dest -= src;
 		} break;
 
 		default:
 			print_err("Unimplemented operation \n");
 	}
+
+	UpdateCpuFlags(inst.op, oldDest, dest, inst.wide);
 }
 
-char HexNibbleStr(uint8_t value)
+void DisplayRegisterChanges(cpu_t previous, cpu_t current)
 {
-	return value < 10 ? '0'+value : 'A'+value-10;
-}
+	print("   ; ");
+	
+	for (int reg=0; reg<12; ++reg) {
+		if (previous.registers[reg].word != current.registers[reg].word) {
+			print("%s(%s->%s), ", regNames[reg], HexByteStr(previous.registers[reg]), HexByteStr(current.registers[reg]));
+		}
+	}
 
-char* HexByteStr(reg_t reg)
-{
-	uint64_t result = 0;
-	// char str[5] = {0};
-	char* str = strcopy("0x0000");
-	sys_zero_memory(str, 5);
+	char oldFlags[32] = {0};
+	char newFlags[32] = {0};
+	for (int flag=0; flag<9; ++flag) {
+		uint16_t bitmask = 1<<flag;
+		// if ((previous.flags & bitmask) != (current.flags & bitmask)) {
+		// 	print("flag[%s](%i->%i)", cpuFlagNames[flag], (previous.flags & bitmask) >> flag, (current.flags & bitmask) >> flag);
+		// }
+		if (previous.flags & bitmask) {
+			strbappend(oldFlags, strformat("%c", cpuFlagNames[flag][0]), 32);
+		}
+		if (current.flags & bitmask) {
+			strbappend(newFlags, strformat("%c", cpuFlagNames[flag][0]), 32);
+		}
+	}
 
-	// str[0] = ((reg.lo>>4)&0x0F) < 10 ? '0'+reg.lo : 'A'+reg.lo-10;
-	// str[1] = (reg.lo&0x0F) < 10 ? '0'+reg.lo : 'A'+reg.lo-10;
-
-	str[0] = '0';
-	str[1] = 'x';
-	str[2] = HexNibbleStr(reg.hi>>4);
-	str[3] = HexNibbleStr(reg.hi&0x0F);
-	str[4] = HexNibbleStr(reg.lo>>4);
-	str[5] = HexNibbleStr(reg.lo&0x0F);
-
-	return str;
-	// sys_copy_memory(&result, str, 5);
-	// return result;
+	print("flags(%s->%s)", oldFlags, newFlags);
 }
 
 void Simulate(data_t file, bool_t printDisassembly)
@@ -177,7 +369,12 @@ void Simulate(data_t file, bool_t printDisassembly)
 			DisplayInstruction(inst);
 		}
 
+		cpu_t previousCpuState = cpu;
+
 		SimInstruction(inst);
+
+		DisplayRegisterChanges(previousCpuState, cpu);
+		print("\n\n");
 	}
 
 	print("\n;  REGISTERS \n");

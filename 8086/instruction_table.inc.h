@@ -13,6 +13,9 @@
 #	define I(mnemonic, ...)
 // decodeformat_t CONCAT2(format, __LINE__) = {OP_##mnemonic, {__VA_ARGS__}};
 #endif
+#ifndef Flags
+#	define Flags(mnemonic, ...)
+#endif
 #define A(mnemonic, ...) I(mnemonic, __VA_ARGS__)
 #ifdef SKIP_ALT
 #	undef A
@@ -39,6 +42,13 @@
 
 #define Addr {BITS_ADDR}, ImplMod(0b00), ImplRm(0b110)
 
+#define F(flag, logic) [flag]={TRUE, logic} 
+#define X FLAGLOGIC_X
+
+#define ARITHMETIC_FLAGS F(CF, X), F(PF, X), F(AF, X), F(ZF, X), F(SF, X), F(OF, X)
+
+// #define Flags(bitmask) {BITS_FLAGS, 0, bitmask}
+
 // MOV reg/mem to/from register
 // [OPCODE_MOV_RM_TOFROM_REG] = {{"mov", OPFORMAT_REG_RM}, {{B_PATTERN, 6, 0b100010}, {B_D}, {B_W}, {B_MOD}, {B_REG}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
 // I(MOV, {{B_PATTERN, 6, 0b100010}, {B_D}, {B_W}, {B_MOD}, {B_REG}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}),
@@ -59,6 +69,7 @@ A(MOV, Bits(10001110), MOD, Bits(0), SR, RM, ImplD, ImplW)
 // // MOV segment reg to reg/mem
 // [OPCODE_MOV_SEG_TO_RM] = {{"mov", OPFORMAT_RM_SR}, {{B_PATTERN, 8, 0b10001100}, {B_MOD}, {B_PATTERN, 1, 0}, {B_SR}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
 A(MOV, Bits(10001100), MOD, Bits(0), SR, RM, ImplW)
+Flags(MOV, 0)
 
 // PUSH reg/mem
 // [OPCODE_PUSH_RM] = {{"push", OPFORMAT_RM, .w=1}, {{B_PATTERN, 8, 0b11111111}, {B_MOD}, {B_PATTERN, 3, 0b110}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
@@ -118,6 +129,7 @@ A(ADD, Bits(100000), S, W, MOD, Bits(000), RM, DATA, DATA_IF_W)
 // // ADD acc, imm
 // [OPCODE_ADD_ACC_IM] = {{"add", OPFORMAT_REG_IM}, {{B_PATTERN, 7, 0b0000010}, {B_W}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
 A(ADD, Bits(0000010), W, DATA, DATA_IF_W, ImplReg(0), ImplD)
+Flags(ADD, ARITHMETIC_FLAGS)
 
 // // ADC formats
 // STANDARD_ARITHMETIC_FORMAT_WITH_SIGN(ADC, "adc", 010),
@@ -140,6 +152,7 @@ A(SUB, Bits(100000), S, W, MOD, Bits(101), RM, DATA, DATA_IF_W)
 // // SUB acc, imm
 // [OPCODE_SUB_ACC_IM] = {{"sub", OPFORMAT_REG_IM}, {{B_PATTERN, 7, 0b0010110}, {B_W}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
 A(SUB, Bits(0010110), W, DATA, DATA_IF_W, ImplReg(0), ImplD)
+Flags(SUB, ARITHMETIC_FLAGS)
 
 // // SBB formats
 // STANDARD_ARITHMETIC_FORMAT_WITH_SIGN(SBB, "sbb", 011),
@@ -160,6 +173,7 @@ A(CMP, Bits(100000), S, W, MOD, Bits(111), RM, DATA, DATA_IF_W)
 // // CMP acc, imm
 // [OPCODE_CMP_ACC_IM] = {{"cmp", OPFORMAT_REG_IM}, {{B_PATTERN, 7, 0b0011110}, {B_W}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
 A(CMP, Bits(0011110), W, DATA, DATA_IF_W, ImplReg(0))
+Flags(CMP, ARITHMETIC_FLAGS)
 
 // [OPCODE_AAS] = {{"aas", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b00111111}}},
 // [OPCODE_DAS] = {{"das", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b00101111}}},
@@ -289,3 +303,6 @@ A(CMP, Bits(0011110), W, DATA, DATA_IF_W, ImplReg(0))
 
 #undef I
 #undef A
+#undef Flags
+#undef F
+#undef X

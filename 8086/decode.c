@@ -599,12 +599,19 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 		if (hasBits[BITS_DATA]) {
 			// if (regOperand.type) {
 				operand1->type = OPERAND_IMMEDIATE;
+				if (bits[BITS_S]) {
+					operand1->flags |= OPERAND_FLAG_SIGNED;
+				}
 
 				if (dataIsWide) {
 					operand1->flags |= OPERAND_FLAG_WIDE;
 					operand1->data = *(uint16_t*)(cpu->instructionData + (cpu->ip + inst.size));
 				} else {
-					operand1->data = *(uint8_t*)(cpu->instructionData + (cpu->ip + inst.size));
+					if (bits[BITS_S]) {
+						operand1->data = *(int8_t*)(cpu->instructionData + (cpu->ip + inst.size));
+					} else {
+						operand1->data = *(uint8_t*)(cpu->instructionData + (cpu->ip + inst.size));
+					}
 				}
 			// } else {
 			// 	regOperand.type = OPERAND_IMMEDIATE;

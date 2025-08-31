@@ -47,7 +47,11 @@ void DisplayOperand(rawinstruction_t inst, operand_t operand)
 					print("byte ");
 				}
 			}
-			print("%u", operand.data);
+			if (operand.flags & OPERAND_FLAG_SIGNED) {
+				print("%i", (int16_t)operand.data);
+			} else {
+				print("%u", operand.data);
+			}
 		} break;
 
 		default:
@@ -69,5 +73,5 @@ void DisplayInstruction(rawinstruction_t inst)
 		DisplayOperand(inst, inst.operand1);
 	}
 
-	print("\n");
+	// print("\n");
 }

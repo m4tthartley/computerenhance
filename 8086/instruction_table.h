@@ -71,6 +71,61 @@ typedef struct {
 	// void* d;
 } bitchunk_t;
 
+enum {
+	FLAG_CARRY		= (1<<0),
+	FLAG_PARITY		= (1<<1),
+	FLAG_AUX_CARRY	= (1<<2),
+	FLAG_ZERO		= (1<<3),
+	FLAG_SIGN		= (1<<4),
+	FLAG_TRAP		= (1<<5),
+	FLAG_INT_ENABLE	= (1<<6),
+	FLAG_DIRECTION	= (1<<7),
+	FLAG_OVERFLOW	= (1<<8),
+	
+	FLAG_COUNT		= 9,
+} cpuflag_t;
+
+char* cpuFlagNames[] = {
+	(char*)"CF",
+	(char*)"PF",
+	(char*)"AF",
+	(char*)"ZF",
+	(char*)"SF",
+	(char*)"TF",
+	(char*)"IF",
+	(char*)"DF",
+	(char*)"OF",
+};
+
+enum {
+	CF	= 0, // (1<<0),
+	PF	= 1, // (1<<1),
+	AF	= 2, // (1<<2),
+	ZF	= 3, // (1<<3),
+	SF	= 4, // (1<<4),
+	TF	= 5, // (1<<5),
+	IF	= 6, // (1<<6),
+	DF	= 7, // (1<<7),
+	OF	= 8, // (1<<8),
+};
+
+enum {
+	// FLAGLOGIC_NONE = 0,
+	FLAGLOGIC_0 = 0,
+	FLAGLOGIC_1 = 1,
+	FLAGLOGIC_X = 2,
+};
+
+typedef struct {
+	bool_t enabled;
+	// uint8_t flag;
+	uint8_t logic;
+} flaglogic_t;
+
+// typedef struct {
+// 	flaglogic_t flags[FLAG_COUNT];
+// } instructionflags_t;
+
 #define DECODE_FORMAT_CHUNKS 16
 typedef struct {
 	op_t op;
@@ -81,6 +136,14 @@ decodeformat_t decodeTable[] = {
 	#define I(mnemonic, ...) {OP_##mnemonic, {__VA_ARGS__}},
 	#include "instruction_table.inc.h"
 	#undef I
+};
+
+flaglogic_t instructionFlags[][FLAG_COUNT] = {
+#	define Flags(mnemonic, ...) [OP_##mnemonic] = { __VA_ARGS__ },
+#	define SKIP_ALT
+#	include "instruction_table.inc.h"
+#	undef SKIP_ALT
+#	undef Flags
 };
 
 
