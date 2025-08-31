@@ -1,53 +1,41 @@
 
 bits 16
 
+; Start image after one row, to avoid overwriting our code!
+mov bp, 64*4
 
-; mov word [1000], 1
-; mov word [1002], 2
-; mov word [1004], 3
-; mov word [1006], 4
-; 
-; mov bx, 1000
-; mov word [bx + 4], 10
-; 
-; mov bx, word [1000]
-; mov cx, word [1002]
-; mov dx, word [1004]
-; mov bp, word [1006]
+; Draw the solid rectangle red/blue/alpha
+mov ax, 0
+mov dx, 64
+y_loop_start:
+	
+	mov cx, 64
+	x_loop_start:
+		mov byte [bp + 0], al  ; Red
+		mov byte [bp + 1], 0   ; Green
+		mov byte [bp + 2], ah  ; Blue
+		mov byte [bp + 3], 255 ; Alpha
+		add bp, 4
+		add al, 12
+		add ah, 1
+			
+		loop x_loop_start
+	
+	sub dx, 1
+	jnz y_loop_start
 
-; mov dx, 6
-; mov bp, 1000
-; 
-; mov si, 0
-; init_loop_start:
-; 	mov word [bp + si], si
-; 	add si, 2
-; 	cmp si, dx
-; 	jnz init_loop_start
-; 
-; mov bx, 0
-; mov si, 0
-; add_loop_start:
-; 	mov cx, word [bp + si]
-; 	add bx, cx
-; 	add si, 2
-; 	cmp si, dx
-; 	jnz add_loop_start
-
-mov dx, 6
-mov bp, 1000
-
-mov si, 0
-init_loop_start:
-	mov word [bp + si], si
-	add si, 2
-	cmp si, dx
-	jnz init_loop_start
-
-mov bx, 0
-mov si, dx
-sub bp, 2
-add_loop_start:
-	add bx, word [bp + si]
-	sub si, 2
-	jnz add_loop_start
+; Add the line rectangle green
+mov bp, 64*4 + 4*64 + 4
+mov bx, bp
+mov cx, 62
+outline_loop_start:
+	
+	mov byte [bp + 1], 255 ; Top line
+	mov byte [bp + 61*64*4 + 1], 255 ; Bottom line
+	mov byte [bx + 1], 255 ; Left line
+	mov byte [bx + 61*4 + 1], 255 ; Right  line
+	
+	add bp, 4
+	add bx, 4*64
+			
+	loop outline_loop_start

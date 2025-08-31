@@ -12,6 +12,9 @@
 #include "disassembly.h"
 
 
+// TODO: Segmented memory access
+
+
 cpu_t cpu = {0};
 uint8_t memory[0xFFFF << 4] = {0};
 
@@ -402,8 +405,14 @@ void SimInstruction(rawinstruction_t inst)
 		// JNP
 		// JNO
 		// JNS
-		// LOOP
-		// LOOPZ
+		case OP_LOOP:
+			--cpu.cx.word;
+			ConditionalJump(cpu.cx.word, inc);
+			break;
+		case OP_LOOPZ:
+			--cpu.cx.word;
+			ConditionalJump(cpu.cx.word && (cpu.flags & FLAG_ZERO), inc);
+			break;
 		case OP_LOOPNZ:
 			--cpu.cx.word;
 			ConditionalJump(cpu.cx.word && (~cpu.flags & FLAG_ZERO), inc);
@@ -510,4 +519,50 @@ void Simulate(data_t file, bool_t printDisassembly)
 	}
 
 	print("\n\n; end of file\n\n");
+
+	// file_t memoryOutputFile = sys_create("build/8086memory.data");
+	// if (memoryOutputFile) {
+	// 	sys_write(memoryOutputFile, 0, memory, sizeof(memory));
+	// 	sys_close(memoryOutputFile);
+	// }
+
+	typedef struct __attribute((packed)) {
+		char header[2];
+		uint32_t size;
+		uint16_t reserved1;
+		uint16_t reserved2;
+		uint32_t offset;
+		
+		uint32_t headerSize;
+		int32_t bitmapWidth;
+		int32_t bitmapHeight;
+		uint16_t colorPlanes;
+		uint16_t colorDepth;
+		uint32_t compression;
+		uint32_t imageSize;
+		int32_t hres;
+		int32_t vres;
+		uint32_t paletteSize;
+		uint32_t importantColors;
+	} bmpheader_t;
+
+	bmpheader_t* bmp = sys_alloc_memory(sizeof(bmpheader_t) + 64*64*4);
+	*bmp = (bmpheader_t){
+		.header = "BM",
+		.size = 64*64*4,
+		.offset = sizeof(bmpheader_t),
+
+		.headerSize = 40,
+		.bitmapHeight = 64,
+		.bitmapWidth = 64,
+		.colorPlanes = 1,
+		.colorDepth = 32,
+	};
+	sys_copy_memory(bmp+1, memory+256, bmp->size);
+
+	file_t framebufferOutput = sys_create("build/8086framebuffer.bmp");
+	if (framebufferOutput) {
+		sys_write(framebufferOutput, 0, bmp, sizeof(bmpheader_t)+bmp->size);
+		sys_close(framebufferOutput);
+	}
 }
