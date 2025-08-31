@@ -55,6 +55,7 @@ typedef enum {
 	BITS_ADDR,
 	BITS_ADDR_LO,
 	BITS_ADDR_HI,
+	BITS_INC,
 	BITS_INC8,
 	BITS_IP_LO,
 	BITS_IP_HI,

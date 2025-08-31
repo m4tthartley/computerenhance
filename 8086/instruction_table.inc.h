@@ -34,8 +34,12 @@
 #define DATA {BITS_DATA, 0}
 #define DATA_IF_W {BITS_DATA_W_IF_W, 0}
 
+#define INC8 DATA, {BITS_INC}
+// {BITS_INC8, 8}
+
 #define ImplD {BITS_D, 0, 1}
 #define ImplW {BITS_W, 0, 1}
+#define ImplS {BITS_S, 0, 1}
 #define ImplMod(value) {BITS_MOD, 0, value}
 #define ImplReg(value) {BITS_REG, 0, value}
 #define ImplRm(value) {BITS_RM, 0, value}
@@ -276,6 +280,26 @@ Flags(CMP, ARITHMETIC_FLAGS)
 // [OPCODE_LOOPZ] = {{"loopz", OPFORMAT_INC}, {{B_PATTERN, 8, 0b11100001}, {B_INC8}}},
 // [OPCODE_LOOPNZ] = {{"loopnz", OPFORMAT_INC}, {{B_PATTERN, 8, 0b11100000}, {B_INC8}}},
 // [OPCODE_JCXZ] = {{"jcxz", OPFORMAT_INC}, {{B_PATTERN, 8, 0b11100011}, {B_INC8}}},
+I(JZ, Bits(01110100), INC8, ImplS)
+I(JL, Bits(01111100), INC8, ImplS)
+I(JLE, Bits(01111110), INC8, ImplS)
+I(JB, Bits(01110010), INC8, ImplS)
+I(JBE, Bits(01110110), INC8, ImplS)
+I(JP, Bits(01111010), INC8, ImplS)
+I(JO, Bits(01110000), INC8, ImplS)
+I(JS, Bits(01111000), INC8, ImplS)
+I(JNZ, Bits(01110101), INC8, ImplS)
+I(JNL, Bits(01111101), INC8, ImplS)
+I(JNLE, Bits(01111111), INC8, ImplS)
+I(JNB, Bits(01110011), INC8, ImplS)
+I(JNBE, Bits(01110111), INC8, ImplS)
+I(JNP, Bits(01111011), INC8, ImplS)
+I(JNO, Bits(01110001), INC8, ImplS)
+I(JNS, Bits(01111001), INC8, ImplS)
+I(LOOP, Bits(11100010), INC8, ImplS)
+I(LOOPZ, Bits(11100001), INC8, ImplS)
+I(LOOPNZ, Bits(11100000), INC8, ImplS)
+I(JCXZ, Bits(11100011), INC8, ImplS)
 
 // // INTERRUPTS
 // [OPCODE_INT] = {{"int", OPFORMAT_IM}, {{B_PATTERN, 8, 0b11001101}, {B_DATA_LO}}},

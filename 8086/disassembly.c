@@ -54,6 +54,14 @@ void DisplayOperand(rawinstruction_t inst, operand_t operand)
 			}
 		} break;
 
+		case OPERAND_INCREMENT: {
+			print("$");
+			if (operand.displacement > -1) {
+				print("+");
+			}
+			print("%i", operand.displacement+2);
+		} break;
+
 		default:
 			print("unknown ");
 	}
@@ -69,7 +77,9 @@ void DisplayInstruction(rawinstruction_t inst)
 		DisplayOperand(inst, inst.operand0);
 	}
 	if (inst.operand1.type) {
-		print(", ");
+		if (inst.operand0.type) {
+			print(", ");
+		}
 		DisplayOperand(inst, inst.operand1);
 	}
 

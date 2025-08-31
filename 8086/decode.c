@@ -623,6 +623,10 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 			// 	}
 			// }
 
+			if (hasBits[BITS_INC]) {
+				operand1->type = OPERAND_INCREMENT;
+			}
+
 			inst.size += 1 + dataIsWide;
 		}
 
@@ -654,13 +658,14 @@ rawinstruction_t DecodeInstruction(cpu_t* cpu)
 
 		rawinstruction_t inst = TryDecodeInstructionFormat(cpu, decodeTable[idx]);
 		if (inst.op) {
-			cpu->ip += inst.size;
 			return inst;
 		}
+		// return inst;
 	}
 
-	print_err("no match found \n");
-	exit(1);
+	// print_err("no match found \n");
+	// exit(1);
+	return (rawinstruction_t){0};
 }
 
 // void Decode(data_t file)

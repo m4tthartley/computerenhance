@@ -426,6 +426,7 @@ typedef struct {
 			reg_t ds;
 
 			uint16_t ip;
+			uint16_t lastIp;
 			uint16_t flags;
 
 			// union {

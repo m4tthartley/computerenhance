@@ -216,11 +216,21 @@ void SetAuxCarryFlag(bool_t value)
 	SetCpuFlag(AF, value);
 }
 
+void ConditionalJump(bool_t condition, int16_t displacement)
+{
+	if (condition) {
+		print("; jumping   ");
+		cpu.ip += displacement;
+	}
+}
+
 void SimInstruction(rawinstruction_t inst)
 {
 	uint16_t dest = GetOperandValue(inst, 0);
 	uint16_t src = GetOperandValue(inst, 1);
 	uint16_t oldDest = dest;
+
+	int16_t inc = inst.operand1.displacement;
 
 	switch (inst.op) {
 		case OP_MOV: {
@@ -316,8 +326,43 @@ void SimInstruction(rawinstruction_t inst)
 			dest -= src;
 		} break;
 
+		
+		case OP_JZ:
+			ConditionalJump(cpu.flags & FLAG_ZERO, inc);
+			break;
+		// JL
+		// JLE
+		case OP_JB:
+			ConditionalJump(cpu.flags & FLAG_CARRY, inc);
+			break;
+		// JBE
+		case OP_JP:
+			ConditionalJump(cpu.flags & FLAG_PARITY, inc);
+			break;
+		// JO
+		// JS
+
+		case OP_JNZ:
+			ConditionalJump(~cpu.flags & FLAG_ZERO, inc);
+			break;
+
+		// JNL
+		// JNLE
+		// JNB
+		// JNBE
+		// JNP
+		// JNO
+		// JNS
+		// LOOP
+		// LOOPZ
+		case OP_LOOPNZ:
+			--cpu.cx.word;
+			ConditionalJump(cpu.cx.word && (~cpu.flags & FLAG_ZERO), inc);
+			break;
+		// JCXZ
+
 		default:
-			print_err("Unimplemented operation \n");
+			print_err(" Unimplemented operation ");
 	}
 
 	UpdateCpuFlags(inst.op, oldDest, dest, inst.wide);
@@ -333,22 +378,26 @@ void DisplayRegisterChanges(cpu_t previous, cpu_t current)
 		}
 	}
 
-	char oldFlags[32] = {0};
-	char newFlags[32] = {0};
-	for (int flag=0; flag<9; ++flag) {
-		uint16_t bitmask = 1<<flag;
-		// if ((previous.flags & bitmask) != (current.flags & bitmask)) {
-		// 	print("flag[%s](%i->%i)", cpuFlagNames[flag], (previous.flags & bitmask) >> flag, (current.flags & bitmask) >> flag);
-		// }
-		if (previous.flags & bitmask) {
-			strbappend(oldFlags, strformat("%c", cpuFlagNames[flag][0]), 32);
+	if (previous.flags != current.flags) {
+		char oldFlags[32] = {0};
+		char newFlags[32] = {0};
+		for (int flag=0; flag<9; ++flag) {
+			uint16_t bitmask = 1<<flag;
+			// if ((previous.flags & bitmask) != (current.flags & bitmask)) {
+			// 	print("flag[%s](%i->%i)", cpuFlagNames[flag], (previous.flags & bitmask) >> flag, (current.flags & bitmask) >> flag);
+			// }
+			if (previous.flags & bitmask) {
+				strbappend(oldFlags, strformat("%c", cpuFlagNames[flag][0]), 32);
+			}
+			if (current.flags & bitmask) {
+				strbappend(newFlags, strformat("%c", cpuFlagNames[flag][0]), 32);
+			}
 		}
-		if (current.flags & bitmask) {
-			strbappend(newFlags, strformat("%c", cpuFlagNames[flag][0]), 32);
-		}
+
+		print("flags(%s->%s), ", oldFlags, newFlags);
 	}
 
-	print("flags(%s->%s)", oldFlags, newFlags);
+	print("ip(%u->%u)", cpu.lastIp, cpu.ip);
 }
 
 void Simulate(data_t file, bool_t printDisassembly)
@@ -365,16 +414,34 @@ void Simulate(data_t file, bool_t printDisassembly)
 	while (cpu.ip < file.size) {
 		rawinstruction_t inst = DecodeInstruction(&cpu);
 
+		if (!inst.op) {
+			if (cpu.ip >= file.size) {
+				// NOTE: Program has reached the end of the instruction stream
+				print("instruction stream ended \n");
+				exit(0);
+			} else {
+				// NOTE: Invalid instruction was decoded
+				print_err("Invalid instruction encoding \n");
+				exit(1);
+			}
+		}
+
 		if (printDisassembly) {
 			DisplayInstruction(inst);
 		}
 
 		cpu_t previousCpuState = cpu;
+		cpu.ip += inst.size;
 
 		SimInstruction(inst);
 
 		DisplayRegisterChanges(previousCpuState, cpu);
-		print("\n\n");
+
+		if (printDisassembly) {
+			print("\n");
+		}
+
+		cpu.lastIp = cpu.ip;
 	}
 
 	print("\n;  REGISTERS \n");
