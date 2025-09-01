@@ -68,16 +68,21 @@ uint32_t GetMemoryAddress(operand_t operand)
 
 	assert(operand.type == OPERAND_EFF_ADDR);
 
+	uint16_t effAddr;
+	
 	if (operand.flags & OPERAND_FLAG_DIRECT_ADDR) {
-		return operand.address;
+		effAddr = operand.address;
 	} else {
-		uint32_t addr = cpu.registers[operand.reg].word;
+		effAddr = cpu.registers[operand.reg].word;
 		if (operand.flags & OPERAND_FLAG_OFFSET_REGISTER) {
-			addr += cpu.registers[operand.regOff].word;
+			effAddr += cpu.registers[operand.regOff].word;
 		}
-		addr += operand.displacement;
-		return addr;
+		effAddr += operand.displacement;
 	}
+
+	uint32_t addr = (cpu.registers[operand.segreg].word << 4) + effAddr;
+	// uint32_t addr = effAddr;
+	return addr;
 }
 
 void* GetAddressFromOperand(operand_t* operand, bool_t wide)
@@ -267,7 +272,7 @@ void SetAuxCarryFlag(bool_t value)
 void ConditionalJump(bool_t condition, int16_t displacement)
 {
 	if (condition) {
-		print("; jumping   ");
+		// print("; jumping   ");
 		cpu.ip += displacement;
 	}
 }
@@ -458,34 +463,30 @@ void DisplayRegisterChanges(cpu_t previous, cpu_t current)
 	print("ip(%u->%u)", cpu.lastIp, cpu.ip);
 }
 
-void Simulate(data_t file, bool_t printDisassembly)
+data_t fileData;
+void LoadExecutable(data_t file)
 {
-	cpu.instructionData = file.data;
+	fileData = file;
+	sys_copy_memory(memory, file.data, file.size);
+	memory[file.size] = HALT_OPCODE;
+	cpu.ip = 0;
+}
 
+void Simulate(bool_t printDisassembly)
+{
 	print("; Disassembly of 8086 binary \n\nbits 16\n\n");
 
-	// cpu.ax.word = 3;
-	// cpu.bx.word = 1024;
-	// cpu.flags |= FLAG_PARITY;
-	// cpu.flags |= FLAG_ZERO;
-
-	while (cpu.ip < file.size) {
+	for (;;) {
 		rawinstruction_t inst = DecodeInstruction(&cpu);
-
-		if (!inst.op) {
-			if (cpu.ip >= file.size) {
-				// NOTE: Program has reached the end of the instruction stream
-				print("instruction stream ended \n");
-				exit(0);
-			} else {
-				// NOTE: Invalid instruction was decoded
-				print_err("Invalid instruction encoding \n");
-				exit(1);
-			}
-		}
 
 		if (printDisassembly) {
 			DisplayInstruction(inst);
+		}
+
+		if (inst.op == OP_HLT) {
+			// NOTE: Program has reached the end of the instruction stream
+			print("; instruction stream ended \n");
+			break;
 		}
 
 		cpu_t previousCpuState = cpu;
@@ -493,9 +494,8 @@ void Simulate(data_t file, bool_t printDisassembly)
 
 		SimInstruction(inst);
 
-		DisplayRegisterChanges(previousCpuState, cpu);
-
 		if (printDisassembly) {
+			DisplayRegisterChanges(previousCpuState, cpu);
 			print("\n");
 		}
 
@@ -558,7 +558,7 @@ void Simulate(data_t file, bool_t printDisassembly)
 		.colorPlanes = 1,
 		.colorDepth = 32,
 	};
-	sys_copy_memory(bmp+1, memory+256, bmp->size);
+	sys_copy_memory(bmp+1, memory+0x10000, bmp->size);
 
 	file_t framebufferOutput = sys_create("build/8086framebuffer.bmp");
 	if (framebufferOutput) {

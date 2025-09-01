@@ -24,6 +24,7 @@ void DisplayOperand(rawinstruction_t inst, operand_t operand)
 		} break;
 
 		case OPERAND_EFF_ADDR: {
+			// print("%s:", regNames[operand.segreg]);
 			print("[");
 			if (operand.flags & OPERAND_FLAG_DIRECT_ADDR) {
 				print("%u", operand.address);

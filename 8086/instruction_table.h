@@ -62,6 +62,8 @@ typedef enum {
 	BITS_IP_INC_LO,
 	BITS_IP_INC_HI,
 
+	BITS_ADDR_SEG,
+
 	BITS_COUNT,
 } bitchunktype_t;
 
@@ -146,6 +148,8 @@ flaglogic_t instructionFlags[][FLAG_COUNT] = {
 #	undef SKIP_ALT
 #	undef Flags
 };
+
+#define HALT_OPCODE 0b11110100
 
 
 #endif

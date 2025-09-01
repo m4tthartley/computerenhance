@@ -43,6 +43,7 @@
 #define ImplMod(value) {BITS_MOD, 0, value}
 #define ImplReg(value) {BITS_REG, 0, value}
 #define ImplRm(value) {BITS_RM, 0, value}
+#define ImplAddrSeg(value) {BITS_ADDR_SEG, 0, value}
 
 #define Addr {BITS_ADDR}, ImplMod(0b00), ImplRm(0b110)
 
@@ -315,7 +316,7 @@ I(JCXZ, Bits(11100011), INC8, ImplS)
 // [OPCODE_STD] = {{"std", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11111101}}},
 // [OPCODE_CLI] = {{"cli", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11111010}}},
 // [OPCODE_STI] = {{"sti", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11111011}}},
-// [OPCODE_HLT] = {{"hlt", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11110100}}},
+I(HLT, Bits(11110100))
 // [OPCODE_WAIT] = {{"wait", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b10011011}}},
 
 // // OPCODE_ESC,

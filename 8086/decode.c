@@ -4,9 +4,13 @@
 //
 
 #include <core/core.h>
+#include "instruction_table.h"
 #include "shared.h"
 #include "sim.h"
 #include "decode.h"
+
+
+extern uint8_t memory[];
 
 
 // uint8_t bitChunkSizeTable[] = {
@@ -405,7 +409,7 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 		hasBits[chunk.type] = TRUE;
 		
 		if (chunk.size) {
-			uint16_t* data = (uint16_t*)(cpu->instructionData + (cpu->ip + bitCursor/8));
+			uint16_t* data = (uint16_t*)(memory + (cpu->ip + bitCursor/8));
 			uint32_t offset = bitCursor % 8;
 			uint16_t mask = (1 << chunk.size) - 1;
 			uint16_t value = (*data >> ((8-chunk.size)-offset)) & mask;
@@ -512,6 +516,7 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 		// bool_t dispIsWide = FALSE;
 		bool_t wide = bits[BITS_W];
 		bool_t dataIsWide = hasBits[BITS_DATA_W_IF_W] && !bits[BITS_S] && bits[BITS_W];
+		bool_t directAddress = mod == 0 && rm == 0b110;
 
 		if (hasBits[BITS_REG]) {
 			regOperand = CreateRegOperand(reg, wide);
@@ -554,8 +559,11 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 				uint8_t effAddrOffsetRegisters[] = {
 					si, di, si, di,
 				};
+				uint8_t segmentRegisterBase[] = {
+					ds, ds, ss, ss, ds, ds, ss, ds,
+				};
 
-				if (mod == 0 && rm == 0b110) {
+				if (directAddress) {
 					// direct address
 					hasBits[BITS_DISP] = TRUE;
 					hasBits[BITS_DISP_IS_WIDE] = TRUE;
@@ -580,6 +588,16 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 				if (mod == 0b10) {
 					hasBits[BITS_DISP_IS_WIDE] = TRUE;
 				}
+
+				if (hasBits[BITS_ADDR_SEG]) {
+					modOperand.segreg = bits[BITS_ADDR_SEG];
+				} else {
+					if (directAddress) {
+						modOperand.segreg = ds;
+					} else {
+						modOperand.segreg = segmentRegisterBase[rm];
+					}
+				}
 			}
 		}
 
@@ -588,9 +606,9 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 
 		if (hasBits[BITS_DISP]) {
 			if (hasBits[BITS_DISP_IS_WIDE]) {
-				modOperand.displacement = *(int16_t*)(cpu->instructionData + (cpu->ip + inst.size));
+				modOperand.displacement = *(int16_t*)(memory + (cpu->ip + inst.size));
 			} else {
-				modOperand.displacement = *(int8_t*)(cpu->instructionData + (cpu->ip + inst.size));
+				modOperand.displacement = *(int8_t*)(memory + (cpu->ip + inst.size));
 			}
 
 			inst.size += 1 + hasBits[BITS_DISP_IS_WIDE];
@@ -605,12 +623,12 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 
 				if (dataIsWide) {
 					operand1->flags |= OPERAND_FLAG_WIDE;
-					operand1->data = *(uint16_t*)(cpu->instructionData + (cpu->ip + inst.size));
+					operand1->data = *(uint16_t*)(memory + (cpu->ip + inst.size));
 				} else {
 					if (bits[BITS_S]) {
-						operand1->data = *(int8_t*)(cpu->instructionData + (cpu->ip + inst.size));
+						operand1->data = *(int8_t*)(memory + (cpu->ip + inst.size));
 					} else {
-						operand1->data = *(uint8_t*)(cpu->instructionData + (cpu->ip + inst.size));
+						operand1->data = *(uint8_t*)(memory + (cpu->ip + inst.size));
 					}
 				}
 			// } else {

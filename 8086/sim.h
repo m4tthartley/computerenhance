@@ -305,6 +305,7 @@ typedef struct {
 	// the reg only needs 3 bits, so maybe the 4th bit could be if it's enabled
 	uint8_t reg;
 	uint8_t regOff;
+	uint8_t segreg;
 	union {
 		uint16_t data;
 		uint16_t address;
@@ -405,7 +406,7 @@ typedef struct {
 } reg_t;
 
 typedef struct {
-	uint8_t* instructionData;
+	// uint8_t* instructionData;
 	// uint16_t ip;
 
 	union {

@@ -63,7 +63,8 @@ int main(int argc, char** argv)
 	// data_t file = LoadFile("./data/listing_0038_many_register_mov");
 	data_t file = LoadFile(filename);
 
-	Simulate(file, TRUE);
+	LoadExecutable(file);
+	Simulate(TRUE);
 
 	return 0;
 }
