@@ -103,7 +103,90 @@ void* GetAddressFromOperand(operand_t* operand, bool_t wide)
 	}
 }
 
-uint16_t GetOperandValue(rawinstruction_t inst, int index)
+uint32_t OperandBitSize(operand_t operand)
+{
+	uint32_t sizes[] = { 8, 16 };
+	bool_t wide = operand.flags & OPERAND_FLAG_WIDE;
+	return sizes[wide];
+}
+
+uint32_t OperandBitMask(operand_t operand)
+{
+	uint32_t sizes[] = { 0xFF, 0xFFFF };
+	bool_t wide = operand.flags & OPERAND_FLAG_WIDE;
+	return sizes[wide];
+}
+
+uint32_t SignExtend(uint32_t value, int bitCount)
+{
+	// value is a u32 containing the original value of a different size
+	
+	uint32_t signBit = 1 << (bitCount-1);
+	int32_t signedValue = (value ^ signBit) - signBit;
+	return signedValue;
+}
+
+uint32_t GetOperandValue(operand_t operand, bool_t wide)
+{
+	uint32_t bitSize = OperandBitSize(operand);
+	uint32_t bitMask = OperandBitMask(operand);
+
+	switch (operand.type) {
+		case OPERAND_REG:
+			if (operand.flags & OPERAND_FLAG_SIGNED) {
+				int32_t result;
+				if (wide) {
+					result = (int16_t)cpu.registers[operand.reg].word;
+				} else {
+					if (operand.flags & OPERAND_FLAG_HIGH) {
+						result = (int8_t)cpu.registers[operand.reg].hi;
+					} else {
+						result = (int8_t)cpu.registers[operand.reg].lo;
+					}
+				}
+				return result;
+			} else {
+				if (wide) {
+					return cpu.registers[operand.reg].word;
+				} else {
+					if (operand.flags & OPERAND_FLAG_HIGH) {
+						return cpu.registers[operand.reg].hi;
+					} else {
+						return cpu.registers[operand.reg].lo;
+					}
+				}
+			}
+
+		case OPERAND_EFF_ADDR: {
+			uint32_t addr = GetMemoryAddress(operand);
+
+			if (operand.flags & OPERAND_FLAG_SIGNED) {
+				uint32_t value = *(uint16_t*)(memory + addr);
+				return SignExtend(value, bitSize);
+			} else {
+				// uint32_t addr = GetMemoryAddress(operand);
+				uint16_t* value = (uint16_t*)(memory + addr);
+				// return *value & (0xFF | (0xFF << (wide*8)));
+				return *value & bitMask;
+			}
+			// if (inst.wide) {
+
+			// } else {
+
+			// }
+		} break;
+
+		case OPERAND_IMMEDIATE:
+			return operand.data;
+
+		default:
+			// assert(FALSE);
+			// print_err(" GetOperandValue for operand type not implemented ");
+			return 0;
+	}
+}
+
+uint16_t GetInstructionOperandValue(rawinstruction_t inst, int index)
 {
 	switch (inst.operands[index].type) {
 		case OPERAND_REG:
@@ -191,7 +274,19 @@ void SetCpuFlag(uint8_t flag, bool_t value)
 	}
 }
 
-void UpdateCpuFlags(op_t op, uint16_t oldValue, uint16_t value, bool_t wide)
+uint8_t InstBitWidth(rawinstruction_t inst)
+{
+	uint8_t a[] = { 8, 16 };
+	return a[inst.wide];
+}
+
+uint8_t BitWidth(bool_t wide)
+{
+	uint8_t a[] = { 8, 16 };
+	return a[wide];
+}
+
+void UpdateCpuFlags(op_t op, uint32_t oldValue, uint32_t value, bool_t wide)
 {
 	// uint16_t dest = GetOperandValue(inst, 0);
 	if (op >= array_size(instructionFlags)) {
@@ -212,6 +307,11 @@ void UpdateCpuFlags(op_t op, uint16_t oldValue, uint16_t value, bool_t wide)
 	bool_t pf = f[PF].enabled && (f[PF].logic == FLAGLOGIC_X);
 	bool_t of = f[OF].enabled && (f[OF].logic == FLAGLOGIC_X);
 	flaglogic_t asd = f[PF];
+
+	// if (cf) {
+	// 	uint8_t w = BitWidth(wide);
+	// 	SetCpuFlag(CF, value & (1<<BitWidth(wide)));
+	// }
 
 	if (pf) {
 		// print("\n; %s", BinaryStr16(value));
@@ -279,9 +379,14 @@ void ConditionalJump(bool_t condition, int16_t displacement)
 
 void SimInstruction(rawinstruction_t inst)
 {
-	uint16_t dest = GetOperandValue(inst, 0);
-	uint16_t src = GetOperandValue(inst, 1);
-	uint16_t oldDest = dest;
+	// uint32_t dest = GetInstructionOperandValue(inst, 0);
+	// uint32_t src = GetInstructionOperandValue(inst, 1);
+	uint32_t dest = GetOperandValue(inst.operand0, inst.wide);
+	uint32_t src = GetOperandValue(inst.operand1, inst.wide);
+	uint32_t result = 0;
+	// uint16_t oldDest = dest;
+
+	bool_t cf = cpu.flags & FLAG_CARRY;
 
 	int16_t inc = inst.operand1.displacement;
 
@@ -322,11 +427,11 @@ void SimInstruction(rawinstruction_t inst)
 			// 	dest[1] = result >> 8;
 			// }
 
-			if (inst.wide) {
-				SetCarryFlag(src > 0xFFFF-dest);
-			} else {
-				SetCarryFlag(src > 0xFF-dest);
-			}
+			// if (inst.wide) {
+			// 	SetCarryFlag(src > 0xFFFF-dest);
+			// } else {
+			// 	SetCarryFlag(src > 0xFF-dest);
+			// }
 
 			// if (dest < 0x10) {
 			// 	SetAuxCarryFlag(src > 0x10-dest);
@@ -338,41 +443,42 @@ void SimInstruction(rawinstruction_t inst)
 			// print("\n; %s", BinaryStr16(dest ^ src));
 			// print("\n; %s", BinaryStr16(dest ^ src ^ (dest+src)));
 			// print("\n; %s", BinaryStr16((dest ^ src ^ (dest+src)) & 0x10));
-			SetAuxCarryFlag((dest ^ src ^ (dest+src)) & 0x10);
 
-			dest += src;
-			StoreInDestination(inst, dest);
-
-			// overflow flag
+			
+			result = dest + src;
+			StoreInDestination(inst, result);
+			
+			// flags
+			SetCpuFlag(CF, result & (1<<BitWidth(inst.wide)));
+			SetCpuFlag(AF, (dest ^ src ^ (dest+src)) & 0x10);
 			if (inst.wide) {
-				uint16_t sameSign = (oldDest&0x8000) == (src&0x8000);
-				uint16_t of =  sameSign && (oldDest&(0x8000)) != (dest&0x8000);
+				uint16_t sameSign = (dest&0x8000) == (src&0x8000);
+				uint16_t of =  sameSign && (dest&(0x8000)) != (result&0x8000);
 				SetCpuFlag(OF, of);
 			} else {
-				uint16_t sameSign = (oldDest&0x80) == (src&0x80);
-				uint16_t of =  sameSign && (oldDest&0x80) != (dest&0x80);
+				uint16_t sameSign = (dest&0x80) == (src&0x80);
+				uint16_t of =  sameSign && (dest&0x80) != (result&0x80);
 				SetCpuFlag(OF, of);
 			}
 		} break;
 
 		case OP_SUB:
 		case OP_CMP: {
-			SetCpuFlag(CF, src > dest);
-			SetCpuFlag(AF, (dest ^ src ^ (dest-src)) & 0x10);
-
-			dest -= src;
+			result = dest - src;
 			if (inst.op == OP_SUB) {
-				StoreInDestination(inst, dest);
+				StoreInDestination(inst, result);
 			}
 
-			// overflow flag
+			// flags
+			SetCpuFlag(CF, dest < src+cf);
+			SetCpuFlag(AF, (dest ^ src ^ (dest-src)) & 0x10);
 			if (inst.wide) {
-				uint16_t diffSign = (oldDest&0x8000) != (src&0x8000);
-				uint16_t of =  diffSign && (oldDest&(0x8000)) != (dest&0x8000);
+				uint16_t diffSign = (dest&0x8000) != (src&0x8000);
+				uint16_t of =  diffSign && (dest&(0x8000)) != (result&0x8000);
 				SetCpuFlag(OF, of);
 			} else {
-				uint16_t diffSign = (oldDest&0x80) != (src&0x80);
-				uint16_t of =  diffSign && (oldDest&0x80) != (dest&0x80);
+				uint16_t diffSign = (dest&0x80) != (src&0x80);
+				uint16_t of =  diffSign && (dest&0x80) != (result&0x80);
 				SetCpuFlag(OF, of);
 			}
 		} break;
@@ -382,6 +488,79 @@ void SimInstruction(rawinstruction_t inst)
 		// 	SetCpuFlag(AF, (dest ^ src ^ (dest-src)) & 0x10);
 		// 	dest -= src;
 		// } break;
+
+		case OP_MUL: {
+			// uint32_t dest = GetOperandValue((operand_t){ .type=OPERAND_REG }, inst.wide);
+			uint32_t dest = cpu.ax.word & (0xFFFF >> (!inst.wide)*8);
+			result = dest * src;
+			if (inst.wide) {
+				cpu.ax.word = result & 0xFFFF;
+				cpu.dx.word = result >> 16;
+			} else {
+				cpu.ax.word = result & 0xFFFF;
+			}
+
+			uint8_t CFOF = result & (inst.wide ? 0xFFFF0000 : 0xFF00);
+			SetCpuFlag(CF, CFOF);
+			SetCpuFlag(OF, CFOF);
+		} break;
+		case OP_IMUL: {
+			// int32_t src = (int16_t)GetOperandValue(inst.operand1, inst.wide);
+			int32_t dest = (int16_t)(cpu.ax.word & (0xFFFF >> (!inst.wide)*8));
+			int32_t iresult = dest * (int32_t)src;
+			result = iresult;
+			if (inst.wide) {
+				cpu.ax.word = (int16_t)iresult;
+				cpu.dx.word = iresult >> 16;
+			} else {
+				cpu.ax.word = iresult & 0xFFFF;
+			}
+
+			uint8_t CFOF = result >> (BitWidth(inst.wide)) != (inst.wide ? 0xFFFF : 0xFF);
+			SetCpuFlag(CF, CFOF);
+			SetCpuFlag(OF, CFOF);
+		} break;
+
+		case OP_DIV: {
+			if (!src) {
+				print_err("Divide by zero exception \n");
+			}
+
+			if (inst.wide) {
+				uint32_t dxax = cpu.ax.word | (cpu.dx.word << 16);
+				uint32_t quotient = dxax / src;
+				uint32_t remainder = dxax % src;
+				cpu.ax.word = quotient;
+				cpu.dx.word = remainder;
+			} else {
+				// uint32_t dxax = cpu.ax.word | (cpu.dx.word << 16);
+				uint32_t quotient = cpu.ax.word / src;
+				uint32_t remainder = cpu.ax.word % src;
+				cpu.ax.lo = quotient;
+				cpu.dx.hi = remainder;
+			}
+		} break;
+		case OP_IDIV: {
+			if (!src) {
+				print_err("Divide by zero exception \n");
+			}
+
+			if (inst.wide) {
+				int32_t dxax = cpu.ax.word | (cpu.dx.word << 16);
+				int32_t divisor = src;
+				int32_t quotient = dxax / divisor;
+				int32_t remainder = dxax % divisor;
+				cpu.ax.word = quotient;
+				cpu.dx.word = remainder;
+			} else {
+				int32_t dividend = cpu.ax.word;
+				int32_t divisor = src;
+				int32_t quotient = dividend / divisor;
+				int32_t remainder = dividend % divisor;
+				cpu.ax.lo = quotient;
+				cpu.dx.hi = remainder;
+			}
+		} break;
 
 
 		case OP_JZ:
@@ -428,7 +607,7 @@ void SimInstruction(rawinstruction_t inst)
 			print_err(" Unimplemented operation ");
 	}
 
-	UpdateCpuFlags(inst.op, oldDest, dest, inst.wide);
+	UpdateCpuFlags(inst.op, dest, result, inst.wide);
 }
 
 void DisplayRegisterChanges(cpu_t previous, cpu_t current)
@@ -504,7 +683,12 @@ void Simulate(bool_t printDisassembly)
 
 	print("\n;  REGISTERS \n");
 	for (int i=0; i<4; ++i) {
-		print(";  %s %s    %s %s    %s %s \n", regNames[i], HexByteStr(cpu.registers[i]), regNames[i+4], HexByteStr(cpu.registers[i+4]), regNames[i+8], HexByteStr(cpu.registers[i+8]));
+		print(
+			";  %s %s (%i)    %s %s (%i)    %s %s (%i) \n",
+			regNames[i], HexByteStr(cpu.registers[i]), (int16_t)cpu.registers[i].word,
+			regNames[i+4], HexByteStr(cpu.registers[i+4]), (int16_t)cpu.registers[i+4].word,
+			regNames[i+8], HexByteStr(cpu.registers[i+8]), (int16_t)cpu.registers[i+8].word
+		);
 	}
 	print("\n;  %s %s    %s %s \n", "ip", HexByteStr(*(reg_t*)&cpu.ip), "fg", HexByteStr(*(reg_t*)&cpu.flags));
 

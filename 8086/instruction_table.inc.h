@@ -3,8 +3,8 @@
 //  Copyright 2025 GiantJelly. All rights reserved.
 //
 
-// #include "sim.h"
 #include "instruction.h"
+
 
 // #define I(mnemonic, ...) {OP_##mnemonic, __VA_ARGS__}
 #define CONCAT(a, b) a ## b
@@ -49,6 +49,24 @@
 
 #define F(flag, logic) [flag]={TRUE, logic} 
 #define X FLAGLOGIC_X
+#define CF_X F(CF, X)
+#define CF_0 F(CF, 0)
+#define CF_1 F(CF, 1)
+#define PF_X F(PF, X)
+#define PF_0 F(PF, 0)
+#define PF_1 F(PF, 1)
+#define AF_X F(AF, X)
+#define AF_0 F(AF, 0)
+#define AF_1 F(AF, 1)
+#define ZF_X F(ZF, X)
+#define ZF_0 F(ZF, 0)
+#define ZF_1 F(ZF, 1)
+#define SF_X F(SF, X)
+#define SF_0 F(SF, 0)
+#define SF_1 F(SF, 1)
+#define OF_X F(OF, X)
+#define OF_0 F(OF, 0)
+#define OF_1 F(OF, 1)
 
 #define ARITHMETIC_FLAGS F(CF, X), F(PF, X), F(AF, X), F(ZF, X), F(SF, X), F(OF, X)
 
@@ -185,13 +203,25 @@ Flags(CMP, ARITHMETIC_FLAGS)
 
 // // MUL
 // [OPCODE_MUL] = {{"mul", OPFORMAT_RM}, {{B_PATTERN, 7, 0b1111011}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b100}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(MUL, Bits(1111011), W, MOD, Bits(100), RM, ImplD)
+Flags(MUL, CF_X, OF_X)
 // [OPCODE_IMUL] = {{"imul", OPFORMAT_RM}, {{B_PATTERN, 7, 0b1111011}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b101}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(IMUL, Bits(1111011), W, MOD, Bits(101), RM, ImplD, ImplS)
+Flags(IMUL, CF_X, OF_X)
 // [OPCODE_AAM] = {{"aam", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11010100}, {B_PATTERN, 8, 0b00001010}}},
+I(AAM, Bits(11010100), Bits(00001010))
+Flags(AAM, PF_X, ZF_X, SF_X)
 
 // // DIV
 // [OPCODE_DIV] = {{"div", OPFORMAT_RM}, {{B_PATTERN, 7, 0b1111011}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b110}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(DIV, Bits(1111011), W, MOD, Bits(110), RM, ImplD)
+Flags(DIV, 0)
 // [OPCODE_IDIV] = {{"idiv", OPFORMAT_RM}, {{B_PATTERN, 7, 0b1111011}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b111}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(IDIV, Bits(1111011), W, MOD, Bits(111), RM, ImplD, ImplS)
+Flags(IDIV, 0)
 // [OPCODE_AAD] = {{"aad", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11010101}, {B_PATTERN, 8, 0b00001010}}},
+I(AAD, Bits(11010101), Bits(00001010))
+Flags(AAD, PF_X, ZF_X, SF_X)
 
 // // Convert
 // [OPCODE_CBW] = {{"cbw", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b10011000}}},

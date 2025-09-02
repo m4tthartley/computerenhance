@@ -662,6 +662,15 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 		inst.operand0 = *operand0;
 		inst.operand1 = *operand1;
 		inst.wide = wide;
+
+		if (bits[BITS_S]) {
+			inst.operand0.flags |= OPERAND_FLAG_SIGNED;
+			inst.operand1.flags |= OPERAND_FLAG_SIGNED;
+		}
+		if (wide) {
+			inst.operand0.flags |= OPERAND_FLAG_WIDE;
+			inst.operand1.flags |= OPERAND_FLAG_WIDE;
+		}
 	}
 
 	return inst;
