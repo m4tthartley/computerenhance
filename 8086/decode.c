@@ -671,6 +671,17 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 			inst.operand0.flags |= OPERAND_FLAG_WIDE;
 			inst.operand1.flags |= OPERAND_FLAG_WIDE;
 		}
+
+		if (hasBits[BITS_V]) {
+			inst.operand1.flags = 0;
+			if (bits[BITS_V]) {
+				inst.operand1.type = OPERAND_REG;
+				inst.operand1.reg = cl;
+			} else {
+				inst.operand1.type = OPERAND_IMMEDIATE;
+				inst.operand1.data = 1;
+			}
+		}
 	}
 
 	return inst;
@@ -691,8 +702,11 @@ rawinstruction_t DecodeInstruction(cpu_t* cpu)
 	}
 
 	// print_err("no match found \n");
-	// exit(1);
-	return (rawinstruction_t){0};
+	print_err("Failed to decode instruction \n");
+	exit(1);
+	// return (rawinstruction_t){
+	// 	.op = OP_NOP,
+	// };
 }
 
 // void Decode(data_t file)

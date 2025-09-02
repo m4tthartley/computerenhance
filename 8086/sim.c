@@ -117,6 +117,13 @@ uint32_t OperandBitMask(operand_t operand)
 	return sizes[wide];
 }
 
+uint32_t OperandSignBit(operand_t operand)
+{
+	uint32_t sizes[] = { 0x80, 0x8000 };
+	bool_t wide = operand.flags & OPERAND_FLAG_WIDE;
+	return sizes[wide];
+}
+
 uint32_t SignExtend(uint32_t value, int bitCount)
 {
 	// value is a u32 containing the original value of a different size
@@ -562,6 +569,37 @@ void SimInstruction(rawinstruction_t inst)
 			}
 		} break;
 
+		case OP_SHL: {
+			uint32_t result = dest << src;
+			StoreInDestination(inst, result);
+
+			uint32_t signBit = OperandSignBit(inst.operand0);
+			SetCpuFlag(CF, result & (signBit<<1));
+			if (src == 1) {
+				SetCpuFlag(OF, (dest&signBit)^(result&signBit));
+			}
+		} break;
+		case OP_SHR: {
+			uint32_t result = dest >> src;
+			StoreInDestination(inst, result);
+
+			uint32_t signBit = OperandSignBit(inst.operand0);
+			SetCpuFlag(CF, result & (signBit<<1));
+			if (src == 1) {
+				SetCpuFlag(OF, (dest&signBit)^(result&signBit));
+			}
+		} break;
+		case OP_SAR: {
+			int32_t result = (int32_t)dest >> (int32_t)src;
+			StoreInDestination(inst, result);
+
+			uint32_t signBit = OperandSignBit(inst.operand0);
+			SetCpuFlag(CF, result & (signBit<<1));
+			if (src == 1) {
+				SetCpuFlag(OF, (dest&signBit)^(result&signBit));
+			}
+		} break;
+
 
 		case OP_JZ:
 			ConditionalJump(cpu.flags & FLAG_ZERO, inc);
@@ -602,6 +640,11 @@ void SimInstruction(rawinstruction_t inst)
 			ConditionalJump(cpu.cx.word && (~cpu.flags & FLAG_ZERO), inc);
 			break;
 		// JCXZ
+
+
+		case OP_NOP:
+			print("---");
+			break;
 
 		default:
 			print_err(" Unimplemented operation ");
