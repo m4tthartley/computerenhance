@@ -457,7 +457,7 @@ void SimInstruction(rawinstruction_t inst)
 			
 			// flags
 			SetCpuFlag(CF, result & (1<<BitWidth(inst.wide)));
-			SetCpuFlag(AF, (dest ^ src ^ (dest+src)) & 0x10);
+			SetCpuFlag(AF, (dest ^ src ^ result) & 0x10);
 			if (inst.wide) {
 				uint16_t sameSign = (dest&0x8000) == (src&0x8000);
 				uint16_t of =  sameSign && (dest&(0x8000)) != (result&0x8000);
@@ -478,7 +478,7 @@ void SimInstruction(rawinstruction_t inst)
 
 			// flags
 			SetCpuFlag(CF, dest < src+cf);
-			SetCpuFlag(AF, (dest ^ src ^ (dest-src)) & 0x10);
+			SetCpuFlag(AF, (dest ^ src ^ result) & 0x10);
 			if (inst.wide) {
 				uint16_t diffSign = (dest&0x8000) != (src&0x8000);
 				uint16_t of =  diffSign && (dest&(0x8000)) != (result&0x8000);
@@ -488,6 +488,26 @@ void SimInstruction(rawinstruction_t inst)
 				uint16_t of =  diffSign && (dest&0x80) != (result&0x80);
 				SetCpuFlag(OF, of);
 			}
+		} break;
+
+		case OP_INC: {
+			src = 1;
+			result = dest + src;
+			StoreInDestination(inst, result);
+
+			SetCpuFlag(AF, (dest ^ src ^ result) & 0x10);
+			uint32_t signBit = OperandSignBit(inst.operand0);
+			SetCpuFlag(OF, (dest&signBit) ^ (result&signBit));
+		} break;
+
+		case OP_DEC: {
+			src = 1;
+			result = dest - src;
+			StoreInDestination(inst, result);
+
+			SetCpuFlag(AF, (dest ^ src ^ result) & 0x10);
+			uint32_t signBit = OperandSignBit(inst.operand0);
+			SetCpuFlag(OF, (dest&signBit) ^ (result&signBit));
 		} break;
 
 		// case OP_CMP: {
@@ -569,6 +589,10 @@ void SimInstruction(rawinstruction_t inst)
 			}
 		} break;
 
+		case OP_NOT: {
+			result = ~dest;
+			StoreInDestination(inst, result);
+		} break;
 		case OP_SHL: {
 			uint32_t result = dest << src;
 			StoreInDestination(inst, result);
@@ -598,6 +622,22 @@ void SimInstruction(rawinstruction_t inst)
 			if (src == 1) {
 				SetCpuFlag(OF, (dest&signBit)^(result&signBit));
 			}
+		} break;
+
+		case OP_AND: {
+			result = dest & src;
+			StoreInDestination(inst, result);
+		} break;
+		case OP_TEST: {
+			result = dest & src;
+		} break;
+		case OP_OR: {
+			result = dest | src;
+			StoreInDestination(inst, result);
+		} break;
+		case OP_XOR: {
+			result = dest ^ src;
+			StoreInDestination(inst, result);
 		} break;
 
 

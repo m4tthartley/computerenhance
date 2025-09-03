@@ -34,6 +34,7 @@
 #define SR {BITS_SR, 2}
 #define DATA {BITS_DATA, 0}
 #define DATA_IF_W {BITS_DATA_W_IF_W, 0}
+#define IMM_DATA DATA, DATA_IF_W
 
 #define INC8 DATA, {BITS_INC}
 // {BITS_INC8, 8}
@@ -160,8 +161,11 @@ Flags(ADD, ARITHMETIC_FLAGS)
 
 // // INC reg/mem
 // [OPCODE_INC_RM] = {{"inc", OPFORMAT_RM}, {{B_PATTERN, 7, 0b1111111}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b000}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(INC, Bits(1111111), W, MOD, Bits(000), RM)
 // // INC reg
 // [OPCODE_INC_REG] = {{"inc", OPFORMAT_REG, .w=1}, {{B_PATTERN, 5, 0b01000}, {B_REG}}},
+A(INC, Bits(01000), REG, ImplW, ImplD)
+Flags(INC, PF_X, AF_X, ZF_X, SF_X, OF_X)
 // // INC ascii adjust
 // [OPCODE_INC_AAA] = {{"aaa", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b00110111}}},
 // // INC decimal adjust
@@ -183,8 +187,10 @@ Flags(SUB, ARITHMETIC_FLAGS)
 
 // // DEC reg/mem
 // [OPCODE_DEC_RM] = {{"dec", OPFORMAT_RM}, {{B_PATTERN, 7, 0b1111111}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b001}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(DEC, Bits(1111111), W, MOD, Bits(001), RM)
 // // DEC reg
 // [OPCODE_DEC_REG] = {{"dec", OPFORMAT_REG, .w=1}, {{B_PATTERN, 5, 0b01001}, {B_REG}}},
+A(DEC, Bits(01001), REG, ImplW, ImplD)
 // // NEG
 // [OPCODE_NEG] = {{"neg", OPFORMAT_RM}, {{B_PATTERN, 7, 0b1111011}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b011}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
 
@@ -196,7 +202,7 @@ I(CMP, Bits(001110), D, W, MOD, REG, RM)
 A(CMP, Bits(100000), S, W, MOD, Bits(111), RM, DATA, DATA_IF_W)
 // // CMP acc, imm
 // [OPCODE_CMP_ACC_IM] = {{"cmp", OPFORMAT_REG_IM}, {{B_PATTERN, 7, 0b0011110}, {B_W}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
-A(CMP, Bits(0011110), W, DATA, DATA_IF_W, ImplReg(0))
+A(CMP, Bits(0011110), W, DATA, DATA_IF_W, ImplReg(0), ImplD)
 Flags(CMP, ARITHMETIC_FLAGS)
 
 // [OPCODE_AAS] = {{"aas", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b00111111}}},
@@ -230,6 +236,7 @@ Flags(AAD, PF_X, ZF_X, SF_X)
 
 // // LOGIC
 // [OPCODE_NOT] = {{"not", OPFORMAT_RM}, {{B_PATTERN, 7, 0b1111011}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b010}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(NOT, Bits(1111011), W, MOD, Bits(010), RM)
 // [OPCODE_SHL] = {{"shl", OPFORMAT_SHIFT}, {{B_PATTERN, 6, 0b110100}, {B_V}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b100}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
 I(SHL, Bits(110100), V, W, MOD, Bits(100), RM)
 // [OPCODE_SHR] = {{"shr", OPFORMAT_SHIFT}, {{B_PATTERN, 6, 0b110100}, {B_V}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b101}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
@@ -245,22 +252,38 @@ I(SAR, Bits(110100), V, W, MOD, Bits(111), RM, ImplS)
 // [OPCODE_AND_REG_RM] = {{"and", OPFORMAT_REG_RM}, {{B_PATTERN, 6, 0b001000}, {B_D}, {B_W}, {B_MOD}, {B_REG}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
 // [OPCODE_AND_RM_IM] = {{"and", OPFORMAT_RM_IM}, {{B_PATTERN, 7, 0b1000000}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b100}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
 // [OPCODE_AND_ACC_IM] = {{"and", OPFORMAT_REG_IM}, {{B_PATTERN, 7, 0b0010010}, {B_W}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
+I(AND, Bits(001000), D, W, MOD, REG, RM)
+A(AND, Bits(1000000), W, MOD, Bits(100), RM, IMM_DATA)
+A(AND, Bits(0010010), W, IMM_DATA, ImplReg(0), ImplD)
+Flags(AND, CF_0, OF_0, SF_X, ZF_X, PF_X)
 
 // // TEST
 // // NOTE: this 6 bit pattern on this one was wrong in the manual, and I'm now unsure if it will clash with xchg
 // [OPCODE_TEST_REG_RM] = {{"test", OPFORMAT_REG_RM}, {{B_PATTERN, 6, 0b100001}, {B_D}, {B_W}, {B_MOD}, {B_REG}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
 // [OPCODE_TEST_RM_IM] = {{"test", OPFORMAT_RM_IM}, {{B_PATTERN, 7, 0b1111011}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b000}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
 // [OPCODE_TEST_ACC_IM] = {{"test", OPFORMAT_REG_IM}, {{B_PATTERN, 7, 0b1010100}, {B_W}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
+I(TEST, Bits(100001), D, W, MOD, REG, RM)
+A(TEST, Bits(1111011), W, MOD, Bits(000), RM, IMM_DATA)
+A(TEST, Bits(1010100), W, IMM_DATA, ImplReg(0), ImplD)
+Flags(TEST, CF_0, OF_0, SF_X, ZF_X, PF_X)
 
 // // OR
 // [OPCODE_OR_REG_RM] = {{"or", OPFORMAT_REG_RM}, {{B_PATTERN, 6, 0b000010}, {B_D}, {B_W}, {B_MOD}, {B_REG}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
 // [OPCODE_OR_RM_IM] = {{"or", OPFORMAT_RM_IM}, {{B_PATTERN, 7, 0b1000000}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b001}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
 // [OPCODE_OR_ACC_IM] = {{"or", OPFORMAT_REG_IM}, {{B_PATTERN, 7, 0b0000110}, {B_W}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
+I(OR, Bits(000010), D, W, MOD, REG, RM)
+A(OR, Bits(1000000), W, MOD, Bits(001), RM, IMM_DATA)
+A(OR, Bits(0000110), W, IMM_DATA, ImplReg(0), ImplD)
+Flags(OR, CF_0, OF_0, SF_X, ZF_X, PF_X)
 
 // // XOR
 // [OPCODE_XOR_REG_RM] = {{"xor", OPFORMAT_REG_RM}, {{B_PATTERN, 6, 0b001100}, {B_D}, {B_W}, {B_MOD}, {B_REG}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
 // [OPCODE_XOR_RM_IM] = {{"xor", OPFORMAT_RM_IM}, {{B_PATTERN, 7, 0b1000000}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b110}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
 // [OPCODE_XOR_ACC_IM] = {{"xor", OPFORMAT_REG_IM}, {{B_PATTERN, 7, 0b0011010}, {B_W}, {B_DATA_LO}, {B_DATA_HI_IF_W}}},
+I(XOR, Bits(001100), D, W, MOD, REG, RM)
+A(XOR, Bits(1000000), W, MOD, Bits(110), RM, IMM_DATA)
+A(XOR, Bits(0011010), W, IMM_DATA, ImplReg(0), ImplD)
+Flags(XOR, CF_0, OF_0, SF_X, ZF_X, PF_X)
 
 // // REP
 // #define REP_BITS 0b1111001
