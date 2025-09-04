@@ -136,6 +136,15 @@ Flags(MOV, 0)
 // [OPCODE_SAHF] = {{"sahf", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b10011110}}},
 // [OPCODE_PUSHF] = {{"pushf", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b10011100}}},
 // [OPCODE_POPF] = {{"popf", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b10011101}}},
+I(LEA, Bits(10001101), MOD, REG, RM, ImplW, ImplD)
+I(LDS, Bits(11000101), MOD, REG, RM, ImplW, ImplD)
+I(LES, Bits(11000100), MOD, REG, RM, ImplW, ImplD)
+
+// Flag Transfers
+I(LAHF, Bits(10011111))
+I(SAHF, Bits(10011110))
+I(PUSHF, Bits(10011100))
+I(POPF, Bits(10011101))
 
 // #define ARITHMETIC_REG_RM(code, mnemonic, bitcode) /* reg/mem, reg */ [OPCODE_##code##_REG_RM] = {{mnemonic, OPFORMAT_REG_RM}, {{B_PATTERN, 6, 0b00##bitcode##0}, {B_D}, {B_W}, {B_MOD}, {B_REG}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}}
 // #define ARITHMETIC_RM_IM(code, mnemonic, bitcode) /* reg/mem, imm */ [OPCODE_##code##_RM_IM] = {{mnemonic, OPFORMAT_RM_IM}, {{B_PATTERN, 6, 0b100000}, {B_S}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b##bitcode}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}, {B_DATA_LO}, {B_DATA_HI_IF_SW_01}}}

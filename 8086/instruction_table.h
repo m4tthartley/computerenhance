@@ -76,22 +76,28 @@ typedef struct {
 
 enum {
 	FLAG_CARRY		= (1<<0),
-	FLAG_PARITY		= (1<<1),
-	FLAG_AUX_CARRY	= (1<<2),
-	FLAG_ZERO		= (1<<3),
-	FLAG_SIGN		= (1<<4),
-	FLAG_TRAP		= (1<<5),
-	FLAG_INT_ENABLE	= (1<<6),
-	FLAG_DIRECTION	= (1<<7),
-	FLAG_OVERFLOW	= (1<<8),
+
+	FLAG_PARITY		= (1<<2),
+
+	FLAG_AUX_CARRY	= (1<<4),
+
+	FLAG_ZERO		= (1<<6),
+	FLAG_SIGN		= (1<<7),
+	FLAG_TRAP		= (1<<8),
+	FLAG_INT_ENABLE	= (1<<9),
+	FLAG_DIRECTION	= (1<<10),
+	FLAG_OVERFLOW	= (1<<11),
 	
-	FLAG_COUNT		= 9,
+	FLAG_COUNT		= 12,
 } cpuflag_t;
 
 char* cpuFlagNames[] = {
 	(char*)"CF",
+	(char*)"  ",
 	(char*)"PF",
+	(char*)"  ",
 	(char*)"AF",
+	(char*)"  ",
 	(char*)"ZF",
 	(char*)"SF",
 	(char*)"TF",
@@ -101,15 +107,15 @@ char* cpuFlagNames[] = {
 };
 
 enum {
-	CF	= 0, // (1<<0),
-	PF	= 1, // (1<<1),
-	AF	= 2, // (1<<2),
-	ZF	= 3, // (1<<3),
-	SF	= 4, // (1<<4),
-	TF	= 5, // (1<<5),
-	IF	= 6, // (1<<6),
-	DF	= 7, // (1<<7),
-	OF	= 8, // (1<<8),
+	CF	= 0,
+	PF	= 2,
+	AF	= 4,
+	ZF	= 6,
+	SF	= 7,
+	TF	= 8,
+	IF	= 9,
+	DF	= 10,
+	OF	= 11,
 };
 
 enum {

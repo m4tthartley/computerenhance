@@ -83,24 +83,52 @@ mov ax, 0
 ; inc sp
 ; inc di
 
-inc byte [bp + 1002]
-inc word [bx + 39]
-inc byte [bx + si + 5]
-inc word [bp + di - 10044]
-inc word [9349]
-inc byte [bx]
+; inc byte [bp + 1002]
+; inc word [bx + 39]
+; inc byte [bx + si + 5]
+; inc word [bp + di - 10044]
+; inc word [9349]
+; inc byte [bx]
 
-; mov al, byte [bp + 1002]
-; mov ax, word [bx + 39]
-; mov al, byte [bx + si + 5]
-; mov ax, word [bp + di - 10044]
-; mov ax, word [9349]
-; mov al, byte [bx]
+; ; mov al, byte [bp + 1002]
+; ; mov ax, word [bx + 39]
+; ; mov al, byte [bx + si + 5]
+; ; mov ax, word [bp + di - 10044]
+; ; mov ax, word [9349]
+; ; mov al, byte [bx]
 
-dec ax
-dec cx
-dec dh
-dec al
-dec ah
-dec sp
-dec di
+; dec ax
+; dec cx
+; dec dh
+; dec al
+; dec ah
+; dec sp
+; dec di
+
+mov bx, 5
+sub bx, 5
+
+mov di, 256
+lea bx, [di + 1024]
+
+mov [100], word 300
+mov [102], word 50
+lds si, [100]
+
+mov [100], word 400
+mov [102], word 25
+les di, [100]
+
+mov bx, 5
+sub bx, 5
+lahf
+
+add bx, 20
+sahf
+
+pushf
+mov bp, sp
+mov cx, [bp]
+
+sub bx, 5
+popf

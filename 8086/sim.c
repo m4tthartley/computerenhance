@@ -61,11 +61,8 @@ char* BinaryStr16(uint16_t value)
 	return str;
 }
 
-uint32_t GetMemoryAddress(operand_t operand)
+uint16_t CalcEffectiveAddress(operand_t operand)
 {
-	// NOTE: 20bits are needed for 8086 memory,
-	// I'm just using a u32
-
 	assert(operand.type == OPERAND_EFF_ADDR);
 
 	uint16_t effAddr;
@@ -79,6 +76,18 @@ uint32_t GetMemoryAddress(operand_t operand)
 		}
 		effAddr += operand.displacement;
 	}
+
+	return effAddr;
+}
+
+uint32_t CalcMemoryAddress(operand_t operand)
+{
+	// NOTE: 20bits are needed for 8086 memory,
+	// I'm just using a u32
+
+	assert(operand.type == OPERAND_EFF_ADDR);
+
+	uint16_t effAddr = CalcEffectiveAddress(operand);
 
 	uint32_t addr = (cpu.registers[operand.segreg].word << 4) + effAddr;
 	// uint32_t addr = effAddr;
@@ -165,7 +174,7 @@ uint32_t GetOperandValue(operand_t operand, bool_t wide)
 			}
 
 		case OPERAND_EFF_ADDR: {
-			uint32_t addr = GetMemoryAddress(operand);
+			uint32_t addr = CalcMemoryAddress(operand);
 
 			if (operand.flags & OPERAND_FLAG_SIGNED) {
 				uint32_t value = *(uint16_t*)(memory + addr);
@@ -193,40 +202,40 @@ uint32_t GetOperandValue(operand_t operand, bool_t wide)
 	}
 }
 
-uint16_t GetInstructionOperandValue(rawinstruction_t inst, int index)
-{
-	switch (inst.operands[index].type) {
-		case OPERAND_REG:
-			if (inst.wide) {
-				return cpu.registers[inst.operands[index].reg].word;
-			} else {
-				if (inst.operands[index].flags & OPERAND_FLAG_HIGH) {
-					return cpu.registers[inst.operands[index].reg].hi;
-				} else {
-					return cpu.registers[inst.operands[index].reg].lo;
-				}
-			}
+// uint16_t GetInstructionOperandValue(rawinstruction_t inst, int index)
+// {
+// 	switch (inst.operands[index].type) {
+// 		case OPERAND_REG:
+// 			if (inst.wide) {
+// 				return cpu.registers[inst.operands[index].reg].word;
+// 			} else {
+// 				if (inst.operands[index].flags & OPERAND_FLAG_HIGH) {
+// 					return cpu.registers[inst.operands[index].reg].hi;
+// 				} else {
+// 					return cpu.registers[inst.operands[index].reg].lo;
+// 				}
+// 			}
 
-		case OPERAND_EFF_ADDR: {
-			uint32_t addr = GetMemoryAddress(inst.operands[index]);
-			uint16_t* value = (uint16_t*)(memory + addr);
-			return *value & (0xFF | (0xFF << (inst.wide*8)));
-			// if (inst.wide) {
+// 		case OPERAND_EFF_ADDR: {
+// 			uint32_t addr = GetMemoryAddress(inst.operands[index]);
+// 			uint16_t* value = (uint16_t*)(memory + addr);
+// 			return *value & (0xFF | (0xFF << (inst.wide*8)));
+// 			// if (inst.wide) {
 
-			// } else {
+// 			// } else {
 
-			// }
-		} break;
+// 			// }
+// 		} break;
 
-		case OPERAND_IMMEDIATE:
-			return inst.operands[index].data;
+// 		case OPERAND_IMMEDIATE:
+// 			return inst.operands[index].data;
 
-		default:
-			// assert(FALSE);
-			// print_err(" GetOperandValue for operand type not implemented ");
-			return 0;
-	}
-}
+// 		default:
+// 			// assert(FALSE);
+// 			// print_err(" GetOperandValue for operand type not implemented ");
+// 			return 0;
+// 	}
+// }
 
 void StoreInDestination(rawinstruction_t inst, uint16_t value)
 {
@@ -249,7 +258,7 @@ void StoreInDestination(rawinstruction_t inst, uint16_t value)
 			break;
 
 		case OPERAND_EFF_ADDR: {
-			uint32_t addr = GetMemoryAddress(inst.operand0);
+			uint32_t addr = CalcMemoryAddress(inst.operand0);
 			memory[addr] = value & 0x00FF;
 			if (inst.wide) {
 				memory[addr+1] = value >> 8;
@@ -394,6 +403,11 @@ void SimInstruction(rawinstruction_t inst)
 	// uint16_t oldDest = dest;
 
 	bool_t cf = cpu.flags & FLAG_CARRY;
+	bool_t pf = cpu.flags & FLAG_PARITY;
+	bool_t af = cpu.flags & FLAG_AUX_CARRY;
+	bool_t zf = cpu.flags & FLAG_ZERO;
+	bool_t sf = cpu.flags & FLAG_SIGN;
+	bool_t of = cpu.flags & FLAG_OVERFLOW;
 
 	int16_t inc = inst.operand1.displacement;
 
@@ -416,6 +430,54 @@ void SimInstruction(rawinstruction_t inst)
 
 			StoreInDestination(inst, src);
 		} break;
+
+		case OP_LEA: {
+			uint16_t effAddr = CalcEffectiveAddress(inst.operand1);
+			StoreInDestination(inst, effAddr);
+		} break;
+		case OP_LDS: {
+			uint32_t addr = *(uint32_t*)(memory + CalcMemoryAddress(inst.operand1));
+			StoreInDestination(inst, addr & 0xFFFF);
+			cpu.ds.word = addr >> 16;
+		} break;
+		case OP_LES: {
+			uint32_t addr = *(uint32_t*)(memory + CalcMemoryAddress(inst.operand1));
+			StoreInDestination(inst, addr & 0xFFFF);
+			cpu.es.word = addr >> 16;
+		} break;
+
+		case OP_LAHF: {
+			uint8_t flags = 0;
+			flags |= cpu.flags & FLAG_CARRY;
+			flags |= cpu.flags & FLAG_PARITY;
+			flags |= cpu.flags & FLAG_AUX_CARRY;
+			flags |= cpu.flags & FLAG_ZERO;
+			flags |= cpu.flags & FLAG_SIGN;
+			cpu.ax.hi = flags;
+		} break;
+		case OP_SAHF: {
+			uint8_t flags = cpu.ax.hi;
+			uint32_t mask = ~(FLAG_CARRY|FLAG_PARITY|FLAG_AUX_CARRY|FLAG_ZERO|FLAG_SIGN);
+			cpu.flags &= mask;
+			cpu.flags |= flags & FLAG_CARRY;
+			cpu.flags |= flags & FLAG_PARITY;
+			cpu.flags |= flags & FLAG_AUX_CARRY;
+			cpu.flags |= flags & FLAG_ZERO;
+			cpu.flags |= flags & FLAG_SIGN;
+		} break;
+		case OP_PUSHF: {
+			cpu.sp.word -= 2;
+			uint32_t addr = (cpu.ss.word<<4) + cpu.sp.word;
+			uint16_t* mem = (uint16_t*)(memory + addr);
+			*mem = cpu.flags;
+		} break;
+		case OP_POPF: {
+			uint32_t addr = (cpu.ss.word<<4) + cpu.sp.word;
+			uint16_t* mem = (uint16_t*)(memory + addr);
+			cpu.flags = *mem;
+			cpu.sp.word += 2;
+		} break;
+		
 
 		case OP_ADD: {
 			// uint8_t* dest = GetAddressFromOperand(&inst.operand0, inst.wide);
