@@ -105,31 +105,31 @@ mov ax, 0
 ; dec sp
 ; dec di
 
-mov bx, 5
-sub bx, 5
+; mov bx, 5
+; sub bx, 5
 
-mov di, 256
-lea bx, [di + 1024]
+; mov di, 256
+; lea bx, [di + 1024]
 
-mov [100], word 300
-mov [102], word 50
-lds si, [100]
+; mov [100], word 300
+; mov [102], word 50
+; lds si, [100]
 
-mov [100], word 400
-mov [102], word 25
-les di, [100]
+; mov [100], word 400
+; mov [102], word 25
+; les di, [100]
 
-mov bx, 5
-sub bx, 5
-lahf
+; mov bx, 5
+; sub bx, 5
+; lahf
 
-add bx, 20
-sahf
+; add bx, 20
+; sahf
 
-pushf
-pushf
-mov bp, sp
-mov cx, [bp]
+; pushf
+; pushf
+; mov bp, sp
+; mov cx, [bp]
 
 ; sub bx, 5
 ; popf
@@ -137,22 +137,59 @@ mov cx, [bp]
 ; mov bp, 0
 ; mov [bp + 0xFFFF - 2], word 4000
 
-mov ax, 0x1234
-push ax
+; mov ax, 0x1234
+; push ax
 
-mov [100], word 0x5608
-push word [100]
+; mov [100], word 0x5608
+; push word [100]
 
-mov ax, 0xBABE
-mov es, ax
-push es
+; mov ax, 0xBABE
+; mov es, ax
+; push es
 
-pop dx
+; pop dx
 
-mov ax, 0xCAFE
-push ax
+; mov ax, 0xCAFE
+; push ax
 
-pop word [100]
-mov cx, [100]
+; pop word [100]
+; mov cx, [100]
 
-pop es
+; pop es
+
+; call cafe
+
+; stuff:
+; 	mov ax, 0xBEEF
+; 	push ax
+; 	hlt
+
+; cafe:
+; 	mov ax, 0xCAFE
+; 	push ax
+; 	; call stuff
+; 	pop ax
+; 	ret
+
+; mov ax, 0
+; call cafe
+
+; stuff:
+; 	add ax, 5
+; 	hlt
+
+; cafe:
+; 	add ax, 7
+; 	ret
+
+mov ax, 0
+mov cx, 6
+
+hello:
+	add ax, 5
+	push ax
+
+	loop hello
+
+done:
+	hlt

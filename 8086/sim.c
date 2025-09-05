@@ -194,7 +194,7 @@ uint32_t GetOperandValue(operand_t operand, bool_t wide)
 						return cpu.registers[operand.reg].lo;
 					}
 				}
-			}
+			}	
 
 		case OPERAND_EFF_ADDR: {
 			uint32_t addr = CalcMemoryAddress(operand);
@@ -217,6 +217,11 @@ uint32_t GetOperandValue(operand_t operand, bool_t wide)
 
 		case OPERAND_IMMEDIATE:
 			return operand.data;
+
+		case OPERAND_INCREMENT: {
+			int32_t result = operand.displacement;
+			return result;
+		}
 
 		default:
 			// assert(FALSE);
@@ -414,6 +419,20 @@ void ConditionalJump(bool_t condition, int16_t displacement)
 		// print("; jumping   ");
 		cpu.ip += displacement;
 	}
+}
+
+void PushStack16(uint16_t value)
+{
+	cpu.sp.word -= 2;
+	uint16_t* mem = (uint16_t*)(memory + (cpu.ss.word<<4) + cpu.sp.word);
+	*mem = value;
+}
+
+uint16_t PopStack16()
+{
+	uint16_t* mem = (uint16_t*)(memory + (cpu.ss.word<<4) + cpu.sp.word);
+	cpu.sp.word += 2;
+	return *mem;
 }
 
 void SimInstruction(rawinstruction_t inst)
@@ -737,6 +756,60 @@ void SimInstruction(rawinstruction_t inst)
 		case OP_XOR: {
 			result = dest ^ src;
 			StoreInDestination(inst, result);
+		} break;
+
+
+		case OP_CALL: {
+			uint16_t ip = inst.operand1.data;
+			uint16_t cs = inst.operand1.data1;
+			if (inst.operand1.type == OPERAND_EFF_ADDR) {
+				uint16_t* mem = (uint16_t*)(memory + CalcMemoryAddress(inst.operand1));
+				ip = mem[0];
+				cs = mem[1];
+			}
+
+			if (inst.operand0.flags & OPERAND_FLAG_FAR_ADDR) {
+				cpu.sp.word -= 4;
+				uint16_t* mem = (uint16_t*)(memory + (cpu.ss.word<<4) + cpu.sp.word);
+				mem[0] = cpu.ip;
+				mem[1] = cpu.cs.word;
+				cpu.ip = ip;
+				cpu.cs.word = cs;
+			} else {
+				cpu.sp.word -= 2;
+				uint16_t* mem = (uint16_t*)(memory + (cpu.ss.word<<4) + cpu.sp.word);
+				mem[0] = cpu.ip;
+				int32_t disp = (int16_t)ip;
+				cpu.ip += disp;
+			}
+		} break;
+		case OP_JMP: {
+			uint16_t ip = inst.operand1.data;
+			uint16_t cs = inst.operand1.data1;
+			if (inst.operand1.type == OPERAND_EFF_ADDR) {
+				uint16_t* mem = (uint16_t*)(memory + CalcMemoryAddress(inst.operand1));
+				ip = mem[0];
+				cs = mem[1];
+			}
+
+			if (inst.operand0.flags & OPERAND_FLAG_FAR_ADDR) {
+				cpu.ip = ip;
+				cpu.cs.word = cs;
+			} else {
+				int32_t disp = (int16_t)ip;
+				cpu.ip += disp;
+			}
+		} break;
+		case OP_RET: {
+			cpu.ip = PopStack16();
+			uint32_t extraPop = src;
+			cpu.sp.word += extraPop;
+		} break;
+		case OP_RETF: {
+			cpu.ip = PopStack16();
+			cpu.cs.word = PopStack16();
+			uint32_t extraPop = src;
+			cpu.sp.word += extraPop;
 		} break;
 
 

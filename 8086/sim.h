@@ -298,6 +298,9 @@ enum {
 	OPERAND_FLAG_HIGH			 = (1<<3),
 	OPERAND_FLAG_SIGNED			 = (1<<4),
 	OPERAND_FLAG_SIZE_SPECIFIER  = (1<<5),
+	OPERAND_FLAG_FAR_ADDR	 	 = (1<<6),
+	OPERAND_FLAG_INCREMENT	 	 = (1<<7),
+	OPERAND_FLAG_DOUBLE_WIDE	 = (1<<8),
 } operandflags_t;
 typedef struct {
 	operandtype_t type;
@@ -311,7 +314,12 @@ typedef struct {
 		uint16_t address;
 		int16_t displacement;
 	};
-	uint8_t flags;
+	union {
+		uint16_t data1;
+		uint16_t address1;
+		int16_t displacement1;
+	};
+	uint16_t flags;
 } operand_t;
 
 // typedef struct {

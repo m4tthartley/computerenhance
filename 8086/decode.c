@@ -515,7 +515,7 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 		// bool_t disp = FALSE;
 		// bool_t dispIsWide = FALSE;
 		bool_t wide = bits[BITS_W];
-		bool_t dataIsWide = hasBits[BITS_DATA_W_IF_W] && !bits[BITS_S] && bits[BITS_W];
+		bool_t dataIsWide = hasBits[BITS_DATA] && !bits[BITS_S] && bits[BITS_W];
 		bool_t directAddress = mod == 0 && rm == 0b110;
 
 		if (hasBits[BITS_REG]) {
@@ -641,12 +641,35 @@ rawinstruction_t TryDecodeInstructionFormat(cpu_t* cpu, decodeformat_t format)
 			// 	}
 			// }
 
-			if (hasBits[BITS_INC]) {
-				operand1->type = OPERAND_INCREMENT;
+			inst.size += 1 + dataIsWide;
+
+			if (bits[BITS_DOUBLE_WIDE]) {
+				operand1->flags |= OPERAND_FLAG_DOUBLE_WIDE;
+				operand1->data1 = *(uint16_t*)(memory + (cpu->ip + inst.size));
+				inst.size += 2;
 			}
 
-			inst.size += 1 + dataIsWide;
+			if (hasBits[BITS_INC]) {
+				operand1->flags |= OPERAND_FLAG_INCREMENT;
+			}
+
 		}
+
+		// if (hasBits[BITS_IP]) {
+		// 	operand0->type = OPERAND_IP;
+
+		// 	if (bits[BITS_FAR]) {
+		// 		operand0->address = *(uint16_t*)(memory + (cpu->ip + inst.size));
+		// 		inst.size += 2;
+
+		// 		operand0->flags |= OPERAND_FLAG_FAR_ADDR;
+		// 		operand0->cs = *(uint16_t*)(memory + (cpu->ip + inst.size));
+		// 		inst.size += 2;
+		// 	} else {
+		// 		operand0->displacement = *(int16_t*)(memory + (cpu->ip + inst.size));
+		// 		inst.size += 2;
+		// 	}
+		// }
 
 		if (operand1->type == OPERAND_IMMEDIATE && operand0->type != OPERAND_REG) {
 			operand1->flags |= OPERAND_FLAG_SIZE_SPECIFIER;

@@ -36,7 +36,13 @@
 #define DATA_IF_W {BITS_DATA_W_IF_W, 0}
 #define IMM_DATA DATA, DATA_IF_W
 
+#define IP_INC DATA, {BITS_INC}
 #define INC8 DATA, {BITS_INC}
+// #define IP {BITS_IP}
+// #define CS DATA
+#define IP_CS DATA
+// #define CS {BITS_CS}
+// #define INC16 DATA, {BITS_INC16}
 // {BITS_INC8, 8}
 
 #define ImplD {BITS_D, 0, 1}
@@ -46,6 +52,7 @@
 #define ImplReg(value) {BITS_REG, 0, value}
 #define ImplRm(value) {BITS_RM, 0, value}
 #define ImplAddrSeg(value) {BITS_ADDR_SEG, 0, value}
+#define ImplFar {BITS_DOUBLE_WIDE, 0, 1}
 
 #define Addr {BITS_ADDR}, ImplMod(0b00), ImplRm(0b110)
 
@@ -206,6 +213,7 @@ I(DEC, Bits(1111111), W, MOD, Bits(001), RM)
 // // DEC reg
 // [OPCODE_DEC_REG] = {{"dec", OPFORMAT_REG, .w=1}, {{B_PATTERN, 5, 0b01001}, {B_REG}}},
 A(DEC, Bits(01001), REG, ImplW, ImplD)
+Flags(DEC, PF_X, AF_X, ZF_X, SF_X, OF_X)
 // // NEG
 // [OPCODE_NEG] = {{"neg", OPFORMAT_RM}, {{B_PATTERN, 7, 0b1111011}, {B_W}, {B_MOD}, {B_PATTERN, 3, 0b011}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
 
@@ -318,6 +326,10 @@ Flags(XOR, CF_0, OF_0, SF_X, ZF_X, PF_X)
 // [OPCODE_CALL_INDIRECT_SEG] = {{"call", OPFORMAT_RM, .skipRmSizeSpecifier=1, .w=1}, {{B_PATTERN, 8, 0b11111111}, {B_MOD}, {B_PATTERN, 3, 0b010}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
 // [OPCODE_CALL_DIRECT_INTERSEG] = {{"call", OPFORMAT_IP_CS, .skipRmSizeSpecifier=1}, {{B_PATTERN, 8, 0b10011010}, {B_IP_LO}, {B_IP_HI}, {B_DATA_LO}, {B_DATA_HI}}},
 // [OPCODE_CALL_INDIRECT_INTERSEG] = {{"call far", OPFORMAT_RM, .skipRmSizeSpecifier=1, .w=1}, {{B_PATTERN, 8, 0b11111111}, {B_MOD}, {B_PATTERN, 3, 0b011}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(CALL, Bits(11101000), IP_INC, ImplW)
+A(CALL, Bits(11111111), MOD, Bits(010), RM, ImplW)
+A(CALL, Bits(10011010), IP_CS, ImplW, ImplFar)
+A(CALL, Bits(11111111), MOD, Bits(011), RM, ImplW, ImplFar)
 
 // // JMP unconditional
 // [OPCODE_JMP_DIRECT_SEG] = {{"jmp", OPFORMAT_IP_INC}, {{B_PATTERN, 8, 0b11101001}, {B_IP_INC_LO}, {B_IP_INC_HI}}},
@@ -325,12 +337,21 @@ Flags(XOR, CF_0, OF_0, SF_X, ZF_X, PF_X)
 // [OPCODE_JMP_INDIRECT_SEG] = {{"jmp", OPFORMAT_RM, .w=1}, {{B_PATTERN, 8, 0b11111111}, {B_MOD}, {B_PATTERN, 3, 0b100}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
 // [OPCODE_JMP_DIRECT_INTERSEG] = {{"jmp", OPFORMAT_IP_CS}, {{B_PATTERN, 8, 0b11101010}, {B_IP_LO}, {B_IP_HI}, {B_DATA_LO}, {B_DATA_HI}}},
 // [OPCODE_JMP_INDIRECT_INTERSEG] = {{"jmp far", OPFORMAT_RM, .w=1}, {{B_PATTERN, 8, 0b11111111}, {B_MOD}, {B_PATTERN, 3, 0b101}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(JMP, Bits(11101001), IP_INC, ImplW)
+A(JMP, Bits(11101011), IP_INC, ImplS)
+A(JMP, Bits(11111111), MOD, Bits(100), RM, ImplW)
+A(JMP, Bits(11101010), IP_CS, ImplW, ImplFar)
+A(JMP, Bits(11111111), MOD, Bits(101), RM, ImplW, ImplFar)
 
 // // RET
 // [OPCODE_RET_SEG] = {{"ret", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11000011}}},
 // [OPCODE_RET_SEG_IM] = {{"ret", OPFORMAT_IM}, {{B_PATTERN, 8, 0b11000010}, {B_DATA_LO}, {B_DATA_HI}}},
 // [OPCODE_RET_INTERSEG] = {{"retf", OPFORMAT_NONE}, {{B_PATTERN, 8, 0b11001011}}},
 // [OPCODE_RET_INTERSEG_IM] = {{"retf", OPFORMAT_IM}, {{B_PATTERN, 8, 0b11001010}, {B_DATA_LO}, {B_DATA_HI}}},
+I(RET, Bits(11000011))
+A(RET, Bits(11000010), DATA, ImplW)
+I(RETF, Bits(11001011))
+A(RETF, Bits(11001010), DATA, ImplW)
 
 // // JUMPS conditional
 // [OPCODE_JE] = {{"je", OPFORMAT_INC}, {{B_PATTERN, 8, 0b01110100}, {B_INC8}}},

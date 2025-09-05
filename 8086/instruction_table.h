@@ -57,12 +57,16 @@ typedef enum {
 	BITS_ADDR_HI,
 	BITS_INC,
 	BITS_INC8,
+	BITS_IP,
+	BITS_CS,
 	BITS_IP_LO,
 	BITS_IP_HI,
 	BITS_IP_INC_LO,
 	BITS_IP_INC_HI,
 
 	BITS_ADDR_SEG,
+
+	BITS_DOUBLE_WIDE,
 
 	BITS_COUNT,
 } bitchunktype_t;
