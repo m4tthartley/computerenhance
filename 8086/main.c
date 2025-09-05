@@ -20,6 +20,7 @@
 #include "sim.c"
 #include "decode.c"
 #include "disassembly.c"
+#include "cycles.c"
 
 
 // char* regNamesWide[] = {

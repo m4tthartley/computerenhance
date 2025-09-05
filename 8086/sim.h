@@ -451,4 +451,7 @@ typedef struct {
 } cpu_t;
 
 
+uint32_t CalcMemoryAddress(operand_t operand);
+
+
 #endif

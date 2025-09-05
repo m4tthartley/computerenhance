@@ -2,14 +2,14 @@
 bits 16
 
 ; Data stored at the second 64k page
-mov ax, 0x1000
-mov ds, ax
+; mov ax, 0x1000
+; mov ds, ax
 
 ; Stack stored at the third 64k page
-mov ax, 0x2000
-mov ss, ax
+; mov ax, 0x2000
+; mov ss, ax
 
-mov ax, 0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; mov ax, 5
 ; mov bx, 4
@@ -182,14 +182,39 @@ mov ax, 0
 ; 	add ax, 7
 ; 	ret
 
-mov ax, 0
-mov cx, 6
+; mov ax, 0
+; mov cx, 6
 
-hello:
-	add ax, 5
-	push ax
+; hello:
+; 	add ax, 5
+; 	push ax
 
-	loop hello
+; 	loop hello
 
-done:
-	hlt
+; done:
+; 	hlt
+
+mov bx, 1000
+mov bp, 2000
+mov si, 3000
+mov di, 4000
+
+mov cx, [bp + di]
+mov [bx + si], cx
+
+mov cx, [bp + si]
+mov [bx + di], cx
+
+mov cx, [bp + di + 1000]
+mov [bx + si + 1000], cx
+
+mov cx, [bp + si + 1000]
+mov [bx + di + 1000], cx
+
+add dx, [bp + si + 1000]
+
+add word [bp + si], 76
+
+add dx, [bp + si + 1001]
+add [di + 999], dx
+add word [bp + si], 75

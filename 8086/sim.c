@@ -18,6 +18,11 @@
 cpu_t cpu = {0};
 uint8_t memory[0xFFFF << 4] = {0};
 
+int GetTotalClocks();
+int CalcMovClocks(rawinstruction_t inst);
+int CalcAddClocks(rawinstruction_t inst);
+void DisplayInstructionClocksEstimation(rawinstruction_t inst);
+
 char HexNibbleStr(uint8_t value)
 {
 	return value < 10 ? '0'+value : 'A'+value-10;
@@ -930,11 +935,15 @@ void Simulate(bool_t printDisassembly)
 
 		if (printDisassembly) {
 			DisplayRegisterChanges(previousCpuState, cpu);
+			DisplayInstructionClocksEstimation(inst);
 			print("\n");
 		}
 
 		cpu.lastIp = cpu.ip;
 	}
+
+	print("\n;  CLOCKS \n");
+	print("Total clocks estimate: %i \n", GetTotalClocks());
 
 	print("\n;  REGISTERS \n");
 	for (int i=0; i<4; ++i) {
