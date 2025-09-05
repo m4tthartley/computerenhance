@@ -127,8 +127,32 @@ add bx, 20
 sahf
 
 pushf
+pushf
 mov bp, sp
 mov cx, [bp]
 
-sub bx, 5
-popf
+; sub bx, 5
+; popf
+
+; mov bp, 0
+; mov [bp + 0xFFFF - 2], word 4000
+
+mov ax, 0x1234
+push ax
+
+mov [100], word 0x5608
+push word [100]
+
+mov ax, 0xBABE
+mov es, ax
+push es
+
+pop dx
+
+mov ax, 0xCAFE
+push ax
+
+pop word [100]
+mov cx, [100]
+
+pop es

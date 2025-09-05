@@ -98,17 +98,23 @@ Flags(MOV, 0)
 
 // PUSH reg/mem
 // [OPCODE_PUSH_RM] = {{"push", OPFORMAT_RM, .w=1}, {{B_PATTERN, 8, 0b11111111}, {B_MOD}, {B_PATTERN, 3, 0b110}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(PUSH, Bits(11111111), MOD, Bits(110), RM, ImplW, ImplD)
 // // PUSH reg
 // [OPCODE_PUSH_REG] = {{"push", OPFORMAT_REG, .w=1}, {{B_PATTERN, 5, 0b01010}, {B_REG}}},
+A(PUSH, Bits(01010), REG, ImplW)
 // // PUSH seg reg
 // [OPCODE_PUSH_SR] = {{"push", OPFORMAT_SR, .w=1}, {{B_PATTERN, 3, 0b000}, {B_SR}, {B_PATTERN, 3, 0b110}}},
+A(PUSH, Bits(000), SR, Bits(110), ImplW)
 
 // // POP reg/mem
 // [OPCODE_POP_RM] = {{"pop", OPFORMAT_RM, .w=1}, {{B_PATTERN, 8, 0b10001111}, {B_MOD}, {B_PATTERN, 3, 0b000}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},
+I(POP, Bits(10001111), MOD, Bits(000), RM, ImplW)
 // // POP reg
 // [OPCODE_POP_REG] = {{"pop", OPFORMAT_REG, .w=1}, {{B_PATTERN, 5, 0b01011}, {B_REG}}},
+A(POP, Bits(01011), REG, ImplW, ImplD)
 // // POP seg reg
 // [OPCODE_POP_SR] = {{"pop", OPFORMAT_SR, .w=1}, {{B_PATTERN, 3, 0b000}, {B_SR}, {B_PATTERN, 3, 0b111}}},
+A(POP, Bits(000), SR, Bits(111), ImplW, ImplD)
 
 // // XCHG reg, reg/mem
 // [OPCODE_XCHG_REG_RM] = {{"xchg", OPFORMAT_REG_RM, .d=1}, {{B_PATTERN, 7, 0b1000011}, {B_W}, {B_MOD}, {B_REG}, {B_RM}, {B_DISP_LO_IF_MOD}, {B_DISP_HI_IF_MOD}}},

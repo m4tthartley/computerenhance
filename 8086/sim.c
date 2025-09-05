@@ -23,6 +23,29 @@ char HexNibbleStr(uint8_t value)
 	return value < 10 ? '0'+value : 'A'+value-10;
 }
 
+char* HexStr16(uint16_t value)
+{
+	uint64_t result = 0;
+	// char str[5] = {0};
+	char* str = strcopy("0000");
+	// sys_zero_memory(str, 5);
+
+	// str[0] = ((reg.lo>>4)&0x0F) < 10 ? '0'+reg.lo : 'A'+reg.lo-10;
+	// str[1] = (reg.lo&0x0F) < 10 ? '0'+reg.lo : 'A'+reg.lo-10;
+
+	// str[0] = '0';
+	// str[1] = 'x';
+	int s = 0;
+	str[s+0] = HexNibbleStr((value&0xF000)>>12);
+	str[s+1] = HexNibbleStr((value&0x0F00)>>8);
+	str[s+2] = HexNibbleStr((value&0x00F0)>>4);
+	str[s+3] = HexNibbleStr((value&0x000F));
+
+	return str;
+	// sys_copy_memory(&result, str, 5);
+	// return result;
+}
+
 char* HexByteStr(reg_t reg)
 {
 	uint64_t result = 0;
@@ -429,6 +452,20 @@ void SimInstruction(rawinstruction_t inst)
 			// }
 
 			StoreInDestination(inst, src);
+		} break;
+
+		case OP_PUSH: {
+			cpu.sp.word -= 2;
+			uint32_t addr = (cpu.ss.word<<4) + cpu.sp.word;
+			uint16_t* mem = (uint16_t*)(memory + (cpu.ss.word<<4) + cpu.sp.word);
+			*mem = src;
+		} break;
+		case OP_POP: {
+			uint32_t addr = (cpu.ss.word<<4) + cpu.sp.word;
+			uint16_t* mem = (uint16_t*)(memory + (cpu.ss.word<<4) + cpu.sp.word);
+			// *mem = src;
+			StoreInDestination(inst, *mem);
+			cpu.sp.word += 2;
 		} break;
 
 		case OP_LEA: {
@@ -839,12 +876,18 @@ void Simulate(bool_t printDisassembly)
 
 	print("\n;  FLAGS \n");
 	print(";  ");
-	for (int i=0; i<9; ++i) {
+	for (int i=0; i<12; ++i) {
 		print("%s  ", cpuFlagNames[i]);
 	}
 	print("\n;  ");
-	for (int i=0; i<9; ++i) {
+	for (int i=0; i<12; ++i) {
 		print("%u   ", (cpu.flags & (1<<i)) >> i);
+	}
+
+	print("\n\n;  TOP OF STACK \n");
+	for (int i=1; i<9; ++i) {
+		uint16_t value = *(int16_t*)(memory + (cpu.ss.word<<4) + 0x10000 - (i*2));
+		print("stack -%i, %s \n", i*2, HexStr16(value));
 	}
 
 	print("\n\n; end of file\n\n");
